@@ -1,0 +1,208 @@
+---
+title: Estadística y probabilidades - PG1
+author:
+  - José Daniel Grayson Tejada (líder)
+  - Fali Ferdinand Araoz Arana
+  - Leisy Valeska Bendezu Choque
+  - Daniela Landavery Vergaray
+  - Vincenzo Francisco Magnani Castro
+lang: es
+editor: visual
+format: html
+---
+
+## Objetivos
+
+El objetivo principal de este proyecto es conocer los factores que influyen en la aceptación de una cuenta de ahorro vía telefónica para los clientes de una entidad bancaria a través de la identificación de patrones usando el análisis estadístico.
+
+Dentro de este marco general, nuestro grupo considera los siguientes objetivos específicos:
+
+1. foo
+1. bar
+
+## Limpieza de datos
+
+Primero, cargamos las librerías que usaremos para limpiar los datos.
+
+```{r}
+#| output: false
+
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("modeest")) install.packages("modeest")
+if (!require("knitr")) install.packages("knitr")
+
+library("tidyverse")
+library("modeest")
+library("knitr")
+```
+
+Ahora, leemos el CSV con los datos y mostramos un breve vistazo con las primeras 12 observaciones:
+
+```{r}
+df <- read_csv("AdquisicionAhorro.csv")
+kable(df[1:12, ]) # TODO: preguntar si podemos usar kable
+```
+
+Como paso preliminar, renombraremos la última columna de `df` para tener consistencia entre los nombres de todas las columnas:
+
+```{r}
+df <- rename(df, adq_ahorro = Adq_Ahorro)
+```
+
+### Arreglo del tipo de `balance`
+
+Podemos observar que la columna `balance` no es de tipo numérico (como debería de ser), sino que es de tipo carácter. Esto significa que existe algún dato en `balance` que no es un valor numérico válido.
+
+Ante ello, podemos usar la función `as.numeric` para convertir, dígase "a la fuerza", los datos de `balance` a números. Los que no se puedan convertir correctamente se convertirán en `NA`, con lo cual se lidiará al llenar los datos faltantes de la columna.
+
+```{r}
+df$balance <- as.numeric(df$balance)
+```
+
+En efecto, podemos comprobar que la columna `balance` ahora es de tipo numérico:
+
+```{r}
+typeof(df$balance)
+```
+
+### Reemplazo con `NaN` en `pdias`
+
+La columna `pdias` tiene la peculiaridad de poder contener valores nulos (en el caso de que nunca se haya contactado al cliente). Los datos originales representan este valor "nulo" con un `-1`, pero, para fines de computación, sería más conveniente convertirlos a `NaN`.
+
+```{r}
+df$pdias <- replace(df$pdias, df$pdias == -1, NaN)
+```
+
+### Búsqueda de datos atípicos
+
+Para las variables numéricas, es prudente realizar algunos diagramas de caja para comprobar que no existan datos atípicos, y sobre todo que los datos se encuentren dentro de rangos realistas (no debería haber alguna edad, por ejemplo, de 200 años).
+
+```{r}
+boxplot(df$edad)
+```
+
+<!-- TODO: podemos explicar los outliers? -->
+
+### Imputación de datos faltantes
+
+Un chequeo rápido hace notar que la mayoría de variables contienen algunos datos faltantes:
+
+```{r}
+# Esta función calcula los valores faltantes de cada columna
+# sin contar los `NaN`.
+na_check <- function(x) {
+  # `is.na` retorna `TRUE` para valores `NaN` también, y no queremos eso
+  apply(is.na(df) & !sapply(df, is.nan), 2, sum)
+}
+
+na_check(df)
+```
+
+En total, esto constituye `r sum(na_check(df))` datos faltantes.
+
+#### Variables categóricas
+
+Para las variables categóricas, imputaremos como reemplazo a los datos faltantes la **moda** de los datos existentes.
+
+```{r}
+# Esta función calcula la moda de una lista de datos `x`
+# y la imputa en sus valores faltantes.
+input_mode <- function(x) {
+    replace_na(x, mfv(x))
+}
+
+df$estciv <- input_mode(df$estciv)
+df$educacion <- df$educacion |>
+  input_mode() |>
+  replace(df$educacion == "desconocido", mfv(df$educacion))
+df$mora <- input_mode(df$mora)
+df$vivienda <- input_mode(df$vivienda)
+df$prestamo <- input_mode(df$prestamo)
+```
+
+::: {.callout-note}
+Nótese que en la columna `educacion` imputamos también sobre las celdas que contienen `"desconocido"`, ya que, para propósitos de este proyecto, son equivalentes efectivamente a un `NA`.
+:::
+
+#### Variables numéricas
+
+Para las variables numéricas, consideramos dos métodos de imputación: la **media** y la **mediana**. La selección de la medida a usar para imputar los datos faltantes se hará según el coeficiente de variación.
+
+```{r}
+# Esta función calcula el coeficiente de variación de `x`
+# ignorando los NAs
+cv <- function(x) {
+  sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+}
+
+cvs <- apply(select(df, edad, balance, dia, duracion, campana, previo), 2, cv)
+cvs
+```
+
+El criterio que usaremos es el siguiente:
+
+- Si $\text{CV} < 30\%$, entonces se imputará la **media**, ya que los datos son homogéneos.
+- Si $\text{CV} \geq 30\%$, entonces se imputará la **mediana**, ya que los datos se inclinan más hacia ser heterogéneos.
+
+Realizamos este criterio con el objetivo de imputar la medida que mejor represente a cada variable: sabemos que la media es más representativa cuando la dispersión es baja, mientras que, caso contrario, la mediana es más representativa.
+
+```{r}
+for (colname in names(cvs)) {
+  x <- df[[colname]]
+
+  # Si CV < 0.6, usar la media; sino, la mediana
+  replace_value <- ifelse(cvs[[colname]] < 0.3, mean(x, na.rm = TRUE), median(x, na.rm = TRUE))
+
+  df[[colname]] <- replace_na(df[[colname]], replace_value)
+}
+
+df
+```
+
+#### La columna `pdias`
+
+La particularidad de la columna `pdias` de poder incluir valores `NaN` podría dificultar la decisión sobre qué valor imputar a sus datos faltantes. Sin embargo, en esta base de datos particular, `pdias` sólo tiene un valor faltante, por lo que podemos optar por simplemente eliminar dicha observación completamente.
+
+```{r}
+df <- filter(df, !is.na(df$pdias))
+```
+
+### Limpieza de `adq_ahorro`
+
+De existir valores faltantes en `adq_ahorro`, sus observaciones correspondientes deben ser eliminadas porque no cuentan con la variable fundamental que queremos analizar. Es por esta última característica que esta variable no puede ser imputada.
+
+```{r}
+df <- filter(df, !is.na(df$adq_ahorro))
+```
+
+En esta base de datos, `adq_ahorro` no tiene valores faltantes, así que este paso no es estrictamente necesario. Sin embargo, lo incluimos por completitud y para tener un sistema más robusto.
+
+:::{.callout-note}
+En este punto podemos corroborar que ya no existen datos faltantes.
+
+```{r}
+na_check(df)
+```
+
+:::
+
+### Consistencia de variables categóricas
+
+Finalmente, es preciso comprobar que las variables categóricas tienen valores consistentes. Por ejemplo, la columna `estciv`, ya que contiene al menos los valores `"married"`, `"single"` y `"divorced"`, no debería contener versiones alternativas de estos, como por ejemplo `"Married"` o `"SINGLE"`.
+
+Podemos comprobar los valores presentes en cada una de estas variables con la función `unique`:
+
+```{r}
+apply(select(df, estciv, educacion, mora, vivienda, prestamo), 2, unique)
+```
+
+De esta manera, podemos comprobar que las variables categóricas tienen valores consistentes.
+
+### Resultado final
+
+Mostramos a continuación el resultado de la base de datos tras la limpieza:
+
+```{r}
+summary(df)
+kable(df[1:12, ])
+```
