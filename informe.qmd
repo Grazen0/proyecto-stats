@@ -8,6 +8,7 @@ author:
   - Vincenzo Francisco Magnani Castro
 lang: es
 editor: visual
+toc: true
 format: html
 ---
 
@@ -18,7 +19,7 @@ El objetivo principal de este proyecto es conocer los factores que influyen en l
 Dentro de este marco general, nuestro grupo considera los siguientes objetivos específicos:
 
 1. foo
-1. bar
+2. bar
 
 ## Limpieza de datos
 
@@ -40,16 +41,46 @@ Ahora, leemos el CSV con los datos y mostramos un breve vistazo con las primeras
 
 ```{r}
 df <- read_csv("AdquisicionAhorro.csv")
-kable(df[1:12, ]) # TODO: preguntar si podemos usar kable
+kable(df[1:12, ])
 ```
+
+En total, esta tabla tiene `r ncol(df)` columnas (es decir, variables) y `r nrow(df)` filas (es decir, observaciones).
+
+Con análisis manual, podemos clasificar a las variables que esta tabla contiene:
+
+| Variable     | Tipo         | Sub-tipo |
+| ------------ | ------------ | -------- |
+| `coddoc`     | cualitativa  | nominal  |
+| `edad`       | cuantitativa | discreta |
+| `estciv`     | cualitativa  | nominal  |
+| `educacion`  | cualitativa  | ordinal  |
+| `mora`       | cualitativa  | nominal  |
+| `balance`    | cuantitativa | continua |
+| `vivienda`   | cualitativa  | nominal  |
+| `prestamo`   | cualitativa  | nominal  |
+| `dia`        | cuantitativa | discreta |
+| `duracion`   | cuantitativa | discreta |
+| `campana`    | cuantitativa | discreta |
+| `pdias`      | cuantitativa | discreta |
+| `previo`     | cuantitativa | discreta |
+| `adq_ahorro` | cualitativa  | nominal  |
 
 Como paso preliminar, renombraremos la última columna de `df` para tener consistencia entre los nombres de todas las columnas:
 
 ```{r}
-df <- rename(df, adq_ahorro = Adq_Ahorro)
+if ("Adq_Ahorro" %in% colnames(df))
+  df <- df %>% rename(adq_ahorro = Adq_Ahorro)
 ```
 
-### Arreglo del tipo de `balance`
+### Eliminación de columnas innecesarias
+
+Para este proyecto, la columna `coddoc` no es de utilidad, porque no provee algún dato estadístico relevante sobre las observaciones. Tal parece que sólo sirve como identificador de las observaciones.
+
+```{r}
+df <- df %>% select(-coddoc)
+```
+
+### Arreglo de los tipos de variables
 
 Podemos observar que la columna `balance` no es de tipo numérico (como debería de ser), sino que es de tipo carácter. Esto significa que existe algún dato en `balance` que no es un valor numérico válido.
 
@@ -65,6 +96,12 @@ En efecto, podemos comprobar que la columna `balance` ahora es de tipo numérico
 typeof(df$balance)
 ```
 
+Por otro lado, una observación a la columna `duracion` muestra que existe un dato que tiene valor decimal:
+
+```{r}
+sum(!is.na(df$duracion) & (as.integer(df$duracion) != df$duracion))
+```
+
 ### Reemplazo con `NaN` en `pdias`
 
 La columna `pdias` tiene la peculiaridad de poder contener valores nulos (en el caso de que nunca se haya contactado al cliente). Los datos originales representan este valor "nulo" con un `-1`, pero, para fines de computación, sería más conveniente convertirlos a `NaN`.
@@ -75,24 +112,30 @@ df$pdias <- replace(df$pdias, df$pdias == -1, NaN)
 
 ### Búsqueda de datos atípicos
 
+```{r}
+summary(df %>% select(edad, balance, dia, duracion, campana, pdias, previo))
+```
+
 Para las variables numéricas, es prudente realizar algunos diagramas de caja para comprobar que no existan datos atípicos, y sobre todo que los datos se encuentren dentro de rangos realistas (no debería haber alguna edad, por ejemplo, de 200 años).
 
 ```{r}
-boxplot(df$edad)
+# boxplot(df$edad)
 ```
-
-<!-- TODO: podemos explicar los outliers? -->
 
 ### Imputación de datos faltantes
 
 Un chequeo rápido hace notar que la mayoría de variables contienen algunos datos faltantes:
 
 ```{r}
+# is.na, pero no retorna TRUE para NANs
+is.na.strict <- function(x) {
+  is.na(x) & !sapply(x, is.nan)
+}
+
 # Esta función calcula los valores faltantes de cada columna
 # sin contar los `NaN`.
 na_check <- function(x) {
-  # `is.na` retorna `TRUE` para valores `NaN` también, y no queremos eso
-  apply(is.na(df) & !sapply(df, is.nan), 2, sum)
+  apply(is.na.strict(x), 2, sum)
 }
 
 na_check(df)
@@ -108,12 +151,12 @@ Para las variables categóricas, imputaremos como reemplazo a los datos faltante
 # Esta función calcula la moda de una lista de datos `x`
 # y la imputa en sus valores faltantes.
 input_mode <- function(x) {
-    replace_na(x, mfv(x))
+  replace_na(x, mfv(x))
 }
 
 df$estciv <- input_mode(df$estciv)
-df$educacion <- df$educacion |>
-  input_mode() |>
+df$educacion <- df$educacion %>%
+  input_mode() %>%
   replace(df$educacion == "desconocido", mfv(df$educacion))
 df$mora <- input_mode(df$mora)
 df$vivienda <- input_mode(df$vivienda)
@@ -135,7 +178,7 @@ cv <- function(x) {
   sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
 }
 
-cvs <- apply(select(df, edad, balance, dia, duracion, campana, previo), 2, cv)
+cvs <- apply(df %>% select(edad, balance, dia, duracion, campana, previo), 2, cv)
 cvs
 ```
 
@@ -146,14 +189,22 @@ El criterio que usaremos es el siguiente:
 
 Realizamos este criterio con el objetivo de imputar la medida que mejor represente a cada variable: sabemos que la media es más representativa cuando la dispersión es baja, mientras que, caso contrario, la mediana es más representativa.
 
+Además, si la variable imputada debe ser discreta, el valor de reemplazo se redondea al entero más cercano.
+
 ```{r}
+is_discrete <- function(x) {
+  all(x == as.integer(x), na.rm = TRUE)
+}
+
 for (colname in names(cvs)) {
   x <- df[[colname]]
 
-  # Si CV < 0.6, usar la media; sino, la mediana
+  # Si CV < 0.3, usar la media; sino, la mediana
   replace_value <- ifelse(cvs[[colname]] < 0.3, mean(x, na.rm = TRUE), median(x, na.rm = TRUE))
+  if (is_discrete(x))
+    replace_value <- round(replace_value)
 
-  df[[colname]] <- replace_na(df[[colname]], replace_value)
+  df[[colname]] <- replace_na(x, replace_value)
 }
 
 df
@@ -164,7 +215,7 @@ df
 La particularidad de la columna `pdias` de poder incluir valores `NaN` podría dificultar la decisión sobre qué valor imputar a sus datos faltantes. Sin embargo, en esta base de datos particular, `pdias` sólo tiene un valor faltante, por lo que podemos optar por simplemente eliminar dicha observación completamente.
 
 ```{r}
-df <- filter(df, !is.na(df$pdias))
+df <- df %>% filter(!is.na.strict(df$pdias))
 ```
 
 ### Limpieza de `adq_ahorro`
@@ -172,7 +223,7 @@ df <- filter(df, !is.na(df$pdias))
 De existir valores faltantes en `adq_ahorro`, sus observaciones correspondientes deben ser eliminadas porque no cuentan con la variable fundamental que queremos analizar. Es por esta última característica que esta variable no puede ser imputada.
 
 ```{r}
-df <- filter(df, !is.na(df$adq_ahorro))
+df <- df %>% filter(!is.na.strict(df$adq_ahorro))
 ```
 
 En esta base de datos, `adq_ahorro` no tiene valores faltantes, así que este paso no es estrictamente necesario. Sin embargo, lo incluimos por completitud y para tener un sistema más robusto.
@@ -193,10 +244,14 @@ Finalmente, es preciso comprobar que las variables categóricas tienen valores c
 Podemos comprobar los valores presentes en cada una de estas variables con la función `unique`:
 
 ```{r}
-apply(select(df, estciv, educacion, mora, vivienda, prestamo), 2, unique)
+apply(df %>% select(estciv, educacion, mora, vivienda, prestamo, adq_ahorro), 2, unique)
 ```
 
 De esta manera, podemos comprobar que las variables categóricas tienen valores consistentes.
+
+:::{.callout-note}
+Nótese que contamos a `adq_ahorro` como categórico porque es esencialmente un sí/no codificado en 1/0.
+:::
 
 ### Resultado final
 
