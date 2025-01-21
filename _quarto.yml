@@ -1,6 +1,3 @@
 project:
-  type: website
+  title: estadistica
   output-dir: build
-  preview:
-    port: 4200
-    browser: false

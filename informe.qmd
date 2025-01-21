@@ -9,8 +9,12 @@ author:
 lang: es
 editor: visual
 toc: true
-toc-depth: 4
-format: html
+format:
+  html:
+    toc: true
+    toc-depth: 4
+number-sections: true
+embed-resources: true
 ---
 
 ## Objetivos
@@ -29,6 +33,12 @@ Cabe destacar que en todos estos objetivos se hace presente la variable `adq_aho
 
 ## Limpieza de datos
 
+```{r}
+cv <- function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
+is.discrete <- function(x) all(x == as.integer(x), na.rm = TRUE)
+ran <- function(x) max(x) - min(x)
+```
+
 Primero, cargamos las librerías que usaremos para limpiar los datos.
 
 ```{r}
@@ -46,7 +56,7 @@ library("knitr")
 Ahora, leemos el CSV con los datos y mostramos un breve vistazo con las primeras 12 observaciones:
 
 ```{r}
-df <- read_csv("AdquisicionAhorro.csv")
+df <- read_csv("data/AdquisicionAhorro.csv")
 kable(df[1:12, ])
 ```
 
@@ -140,11 +150,9 @@ Para las variables categóricas, imputaremos como reemplazo a los datos faltante
 # y la imputa en sus valores faltantes.
 input_mode <- function(x) replace_na(x, mfv(x))
 
-df$estciv <- input_mode(df$estciv)
-df$educacion <- df$educacion %>%
-  input_mode() %>%
-  replace(df$educacion == "desconocido", mfv(df$educacion))
-df$mora <- input_mode(df$mora)
+df$estciv <- replace_na(df$estciv, mfv(df$estciv))
+df$educacion <- replace(df$educacion, is.na(df$educacion) | df$educacion == "desconocido", mfv(df$educacion))
+df$mora <- replace_na(df$mora, mfv(df$mora))
 ```
 
 ::: {.callout-note}
@@ -163,8 +171,6 @@ Para las variables numéricas, consideramos dos métodos de imputación: la **me
 ```{r}
 # Esta función calcula el coeficiente de variación de `x`
 # ignorando los NAs
-cv <- function(x) sd(x, na.rm = TRUE) / mean(x, na.rm = TRUE)
-
 cvs <- apply(df %>% select(edad, balance, campana), 2, cv)
 cvs
 ```
@@ -179,10 +185,6 @@ Realizamos este criterio con el objetivo de imputar la medida que mejor represen
 Además, si la variable imputada debe ser discreta, el valor de reemplazo se redondea al entero más cercano.
 
 ```{r}
-is.discrete <- function(x) {
-  all(x == as.integer(x), na.rm = TRUE)
-}
-
 for (colname in names(cvs)) {
   x <- df[[colname]]
 
@@ -219,7 +221,7 @@ summary(df %>% select(edad, balance, campana, pdias))
 
 La columna `edad` presenta un rango aceptable: de `r min(df$edad)` a `r max(df$edad)` años.
 
-La columna `balance`, por su máximo, podría levantar sospechas. Sin embargo, un diagrama de caja ayuda a visualizar que que la mayoría de datos se encuentran alrededor de la mediana: `r median(df$edad)` euros.
+La columna `balance`, por su máximo, podría levantar sospechas. Sin embargo, un diagrama de caja ayuda a visualizar que la mayoría de datos se encuentran alrededor de la mediana: `r median(df$edad)` euros.
 
 ```{r}
 boxplot(df$balance, main = "Balance promedio anual")
@@ -277,3 +279,134 @@ Además, podemos comprobar que está libre de datos faltantes:
 ```{r}
 colSums(is.na(df))
 ```
+
+## Organización de datos y visualización de gráficos
+
+En esta sección, presentamos algunas visualizaciones de las variables pertinentes a cada objetivo planteado.
+
+```{r}
+# Esta función imprime información relevante sobre una columna
+full_summary <- function(x) {
+  print(summary(x))
+
+  if (class(x) == "numeric") {
+    cat("Std. dev:", sd(x), "\n")
+    cat("Range:", ran(x), "\n")
+  } else {
+    print(table(x))
+    cat("Mode:", mfv(x), "\n")
+  }
+}
+```
+
+### Objetivo 1
+
+> Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
+
+Primero, graficamos `balance`.
+
+```{r}
+full_summary(df$balance)
+hist(df$balance, main = "Histograma del balance de los encuestados")
+```
+
+Sin embargo, el histograma no parece ser de mucha utilidad inicialmente. Un diagrama de cajas muestra por qué: los datos atípicos.
+
+```{r}
+boxplot(df$balance, main = "Diagrama de caja del balance")
+```
+
+Como `balance` tiene una cantidad considerable de datos atípicos, conviene también graficar únicamente los datos dentro del rango intercuartílico para visualizar el "montón" principal de datos.
+
+```{r}
+filter_outliers <- function(x, factor = 1.5) {
+  iqr = IQR(x)
+  lower_bound = quantile(x, 0.25) - factor * iqr
+  upper_bound = quantile(x, 0.75) + factor * iqr
+  iqr_balances = x[x >= lower_bound & x < upper_bound]
+}
+
+hist(
+  filter_outliers(df$balance, 0),
+  main = "Histograma del balance de los encuestados (rango intercuartílico)"
+)
+```
+
+Ahora graficamos `mora`:
+
+```{r}
+full_summary(df$mora)
+
+mora_table <- table(df$mora)
+bars <- barplot(mora_table, col = rainbow(2), main = "Estado de mora de los encuestados", ylim = c(0, 2400))
+text(bars, mora_table + 100, labels = mora_table)
+```
+
+### Objetivo 2
+
+> Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
+
+```{r}
+full_summary(df$edad)
+hist(df$edad)
+
+full_summary(df$estciv)
+```
+
+### Objetivo 3
+
+> Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
+
+```{r}
+full_summary(df$educacion)
+
+educacion_table <- table(df$educacion)
+bars <- barplot(educacion_table, col = rainbow(3), ylim = c(0, 1500), main = "Educación de los encuestados")
+text(bars, educacion_table + 100, labels = educacion_table)
+```
+
+### Objetivo 4
+
+> Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
+
+```{r}
+full_summary(df$campana)
+hist(df$campana)
+```
+
+Al igual que en `balance`, un diagrama de caja muestra por qué este histograma no es tan informativo:
+
+```{r}
+boxplot(df$campana)
+```
+
+Nuevamente parece conveniente graficar un subconjunto relevante de los datos. En este caso, basta con dejar afuera a los datos atípicos.
+
+Sin embargo, resulta que este subconjunto que vamos a graficar sólo tiene `r unique(filter_outliers(df$campana))` valores únicos, así que parece mejor usar un gráfico de barras.
+
+```{r}
+campana_table <- table(filter_outliers(df$campana))
+
+barplot(
+  campana_table,
+  main = "Gráfico de barras de campaña (sin atípicos)"
+)
+```
+
+En términos de frecuencias relativas, podemos observar mejor a `campana` con un gráfico circular:
+
+```{r}
+
+```
+
+### Objetivo 5
+
+> Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
+
+```{r}
+full_summary(df$pdias)
+
+hist(df$pdias)
+```
+
+## Análisis descriptivo
