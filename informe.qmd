@@ -13,7 +13,6 @@ format:
   html:
     toc: true
     toc-depth: 4
-number-sections: true
 embed-resources: true
 ---
 
@@ -47,6 +46,7 @@ Primero, cargamos las librerías que usaremos para limpiar los datos.
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("modeest")) install.packages("modeest")
 if (!require("knitr")) install.packages("knitr")
+if (!require("ggplot2")) install.packages("ggplot2")
 
 library("tidyverse") # `dplyr` viene con tidyverse
 library("modeest")
@@ -280,9 +280,11 @@ Además, podemos comprobar que está libre de datos faltantes:
 colSums(is.na(df))
 ```
 
-## Organización de datos y visualización de gráficos
+## Organización/visualización de datos y análisis descriptivo
 
 En esta sección, presentamos algunas visualizaciones de las variables pertinentes a cada objetivo planteado.
+
+### Vista general
 
 ```{r}
 # Esta función imprime información relevante sobre una columna
@@ -290,87 +292,92 @@ full_summary <- function(x) {
   print(summary(x))
 
   if (class(x) == "numeric") {
-    cat("Std. dev:", sd(x), "\n")
-    cat("Range:", ran(x), "\n")
+    cat("Rango:", round(ran(x), 2), "\n")
+    cat("IQR:", round(IQR(x), 2), "\n")
+    cat("SD:", round(sd(x), 2), "\n")
+    cat("CV:", round(cv(x), 2), "\n")
+    cat("Moda:", round(mfv(x), 2), "\n")
   } else {
-    print(table(x))
-    cat("Mode:", mfv(x), "\n")
+    freqs <- table(x)
+    rel_freqs <- prop.table(freqs)
+    full_table <- rbind(absolute = freqs, relative = round(rel_freqs, 2))
+
+    cat("\n")
+    cat("Frecuencias:\n")
+    print(full_table)
+    cat("\n")
+    cat("Moda:", mfv(x), "\n")
   }
 }
 ```
 
-### Objetivo 1
+#### Balance
 
-> Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
+#### Mora
 
-Primero, graficamos `balance`.
+#### Edad
 
-```{r}
-full_summary(df$balance)
-hist(df$balance, main = "Histograma del balance de los encuestados")
-```
-
-Sin embargo, el histograma no parece ser de mucha utilidad inicialmente. Un diagrama de cajas muestra por qué: los datos atípicos.
+Un histograma puede ofrecer un vistazo a la distribución de los datos:
 
 ```{r}
-boxplot(df$balance, main = "Diagrama de caja del balance")
-```
-
-Como `balance` tiene una cantidad considerable de datos atípicos, conviene también graficar únicamente los datos dentro del rango intercuartílico para visualizar el "montón" principal de datos.
-
-```{r}
-filter_outliers <- function(x, factor = 1.5) {
-  iqr = IQR(x)
-  lower_bound = quantile(x, 0.25) - factor * iqr
-  upper_bound = quantile(x, 0.75) + factor * iqr
-  iqr_balances = x[x >= lower_bound & x < upper_bound]
-}
-
 hist(
-  filter_outliers(df$balance, 0),
-  main = "Histograma del balance de los encuestados (rango intercuartílico)"
+  df$edad,
+  main = "Histograma de la edad de los encuestados",
+  xlab = "Edad (años)",
+  ylab = "Frecuencia"
 )
 ```
 
-Ahora graficamos `mora`:
+Podemos observar que existe una considerable acumulación de datos alrededor de la marca de 35 años. Un diagrama de caja también nos permite observar una estructura similar:
 
 ```{r}
-full_summary(df$mora)
-
-mora_table <- table(df$mora)
-bars <- barplot(mora_table, col = rainbow(2), main = "Estado de mora de los encuestados", ylim = c(0, 2400))
-text(bars, mora_table + 100, labels = mora_table)
+boxplot(df$edad)
 ```
 
-### Objetivo 2
+Al mismo tiempo, podemos notar la presencia de algunos datos atípicos fuera de los bigotes. No obstante los datos no son erróneos: siguen siendo edades aceptables.
 
-> Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
+También podemos darle un vistazo a las medidas numéricas de `edad`:
 
 ```{r}
 full_summary(df$edad)
-hist(df$edad)
+```
 
+Como se puede observar, el rango de `edad` (entre `r min(df$edad)` y `r max(df$edad)` años) es aceptable y realista. Además, la mayoría de los datos se encuentran entre los `r quantile(df$edad, 0.25, type = 3)` y `r quantile(df$edad, 0.75, type = 3)` años (el rango intercuartílico), lo cual tiene sentido realísticamente.
+
+Además, el coeficiente de variación es menor a 30%, por lo que:
+
+1. Los datos tienen dispersión baja.
+
+2. Podemos tomar a la media como la medida representativa del conjunto (aunque igual está cerca a la mediana, en cualquier caso).
+
+Además, aunque no es una medida tan representativa de esta variable, la moda de `r mfv(df$edad)` años que presenta `edad` confirma numéricamente el pico del histograma que vimos anteriormente.
+
+#### Estado civil
+
+Podemos observar las frecuencias relativas de cada estado civil mediante un gráfico circular.
+
+```{r}
+estciv_table <- table(df$estciv)
+labels <- paste0(round(100 * estciv_table / sum(estciv_table), 2), "%")
+
+colors = rainbow(length(estciv_table))
+pie(estciv_table, labels = labels, col = colors, main = "Porcentajes de estado civil en los encuestados")
+legend("topleft", legend = c("Divorciado", "Casado", "Soltero"), fill = colors)
+```
+
+Esto nos permite ver que la mayoría de encuestados están casados (y la segunda mayoría están solteros), aunque no nos permite concluir mucho más.
+
+Este gráfico se puede ver de forma numérica si construimos la tabla de frecuencias (absoluta y relativa) de `estciv`:
+
+```{r}
 full_summary(df$estciv)
 ```
 
-### Objetivo 3
+#### Educación
 
-> Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
-
-```{r}
-full_summary(df$educacion)
-
-educacion_table <- table(df$educacion)
-bars <- barplot(educacion_table, col = rainbow(3), ylim = c(0, 1500), main = "Educación de los encuestados")
-text(bars, educacion_table + 100, labels = educacion_table)
-```
-
-### Objetivo 4
-
-> Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
+#### Campaña
 
 ```{r}
-full_summary(df$campana)
 hist(df$campana)
 ```
 
@@ -382,31 +389,146 @@ boxplot(df$campana)
 
 Nuevamente parece conveniente graficar un subconjunto relevante de los datos. En este caso, basta con dejar afuera a los datos atípicos.
 
-Sin embargo, resulta que este subconjunto que vamos a graficar sólo tiene `r unique(filter_outliers(df$campana))` valores únicos, así que parece mejor usar un gráfico de barras.
+```{r}
+# Usaremos esta función para filtrar datos fuera de un cierto rango
+filter_outliers <- function(x, factor = 1.5) {
+  iqr = IQR(x)
+  lower_bound = quantile(x, 0.25) - factor * iqr
+  upper_bound = quantile(x, 0.75) + factor * iqr
+  iqr_balances = x[x >= lower_bound & x < upper_bound]
+}
+```
+
+Sin embargo, resulta que este subconjunto que vamos a graficar sólo tiene `r length(unique(filter_outliers(df$campana)))` valores únicos, así que conviene un gráfico de barras.
 
 ```{r}
-campana_table <- table(filter_outliers(df$campana))
+campana_2_table <- table(filter_outliers(df$campana))
 
 barplot(
-  campana_table,
-  main = "Gráfico de barras de campaña (sin atípicos)"
+  campana_2_table,
+  main = "Gráfico de barras de campaña (sin atípicos)",
+  xlab = "Número de contactos (campaña)",
+  ylab = "Frecuencia"
 )
 ```
 
-En términos de frecuencias relativas, podemos observar mejor a `campana` con un gráfico circular:
+Con respecto a las medidas, `campana` produce lo siguiente:
 
 ```{r}
-
+full_summary(df$campana)
 ```
 
-### Objetivo 5
+Podemos notar que el rango (`r ran(df$campana)` contactos) es muy elevado en comparación al rango intercuartílico (`r IQR(df$campana)` contactos). Esto confirma los gráficos anteriores: la gran mayoría de datos de `campana` yacen alrededor de `r quantile(df$campana, 0.25, type = 3)` y `r quantile(df$campana, 0.75, type = 3)` días. Sólo hay algunos datos atípicos, los cuales escapan drásticamente ese rango.
+
+Además, es debido a estos datos atípicos tan altos que el coeficiente de variación de `campana` resulta mayor incluso al $100\%$.
+
+#### pdias
+
+### Vista por objetivo
+
+#### Objetivo 1
+
+> Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
+
+#### Objetivo 2
+
+> Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
+
+Un diagrama de caja nos puede permitir comparar posibles diferencias entre las edades de quienes adquirieron una cuenta de ahorro de quienes no.
+
+```{r}
+boxplot(
+  df$edad ~ df$adq_ahorro,
+  main = "Diagrama de caja de la edad de los encuestados",
+  xlab = "Adquisición de la cuenta de ahorro (0 = no, 1 = sí)", ylab = "Edad (años)",
+  col = rainbow(length(unique(df$adq_ahorro)))
+)
+```
+
+Una observación interesante de este gráfico es que muestra cómo la mayoría de encuestados con edades atípicas (es decir, las edades por encima de alrededor de 70) adquirieron la cuenta de ahorro. Aunque sólo se trate de algunos datos particulares, esta observación puede ser relevante para un análisis más adelante.
+
+Nuevamente, resulta útil realizar una comparación entre quienes adquirieron la cuenta de ahorro y quienes no lo hicieron. Para ello, nos conviene usar un diagrama de mosaico.
+
+```{r}
+data <- table(df$adq_ahorro, df$estciv)
+mosaicplot(data, main = "Diagrama de mosaico", color = TRUE)
+```
+
+Sin embargo, parece que, a primera vista, no hay una diferencia significativa entre el nivel educativo de los que adquirieron la cuenta de ahorro y quienes no. Pese a ello, podemos notar que, entre las personas que sí adquirieron la cuenta, hay *ligeramente* menos individuos casados (divorciados, en su lugar).
+
+Otro vistazo interesante a estas variables es analizar diagramas de caja de las edades para cada estado civil.
+
+```{r}
+boxplot(
+  df$edad ~ df$estciv,
+  main = "Diagrama de caja de edades por estado civil",
+  col = rainbow(length(unique(df$estciv))),
+  xlab = "Estado civil",
+  ylab = "Edad (años)"
+)
+```
+
+Podemos observar de forma notoria que las personas solteras tienden a tener edades menores que las personas casadas o divorciadas, lo cual tiene sentido si consideramos que, intuitivamente, una persona mayor tiene más probabilidad de estar casada que una persona más joven.
+
+Además, se puede observar que la caja correspondiente a los individuos divorciados está muy ligeramente movida un poco más arriba que la de los individuos casados. Es una diferencia extremadamente pequeña, pero igualmente tiene sentido.
+
+#### Objetivo 3
+
+> Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
+
+#### Objetivo 4
+
+> Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
+
+```{r}
+ggplot(df, aes(x = campana, fill = factor(adq_ahorro))) +
+  geom_histogram(bins = 30, position = "dodge", alpha = 0.7) +
+  facet_wrap(~adq_ahorro, scales = "free_y") +
+  labs(
+    title = "Histogramas de campana por adquisición de cuenta de ahorro",
+    x = "Número de contactos (campaña)",
+    y = "Frecuencia",
+    fill = "Adquirió cuenta (1 = Sí, 0 = No)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+resumen_campana <- df %>% 
+  group_by(adq_ahorro) %>%
+  summarise(
+    media = mean(campana),
+    mediana = median(campana),
+    moda = mfv(campana),
+    cv = cv(campana),
+    max = max(campana),
+    min = min(campana),
+    rango = ran(campana),
+    sd = sd(campana),
+  )
+
+kable(resumen_campana)
+```
+
+A partir de estas medidas podemos realizar las siguientes observaciones:
+
+1. Media y mediana:
+   - La media y la mediana son muy similares entre los dos grupos:
+     - No adquirieron: Media = 2.796, Mediana = 2.
+     - Adquirieron: Media = 2.840, Mediana = 2.
+   - Esto indica que, en promedio, el número de contactos realizados es casi igual para ambos grupos.
+   - La mediana igual en ambos casos (2) sugiere que la distribución está centrada cerca de este valor.
+2. Desviación estándar:
+   - Los clientes que adquirieron la cuenta tienen una desviación estándar más alta (3.304 frente a 2.649), lo que indica mayor dispersión en el número de contactos realizados.
+   - Es decir, el número de contactos es más variable para los clientes que adquirieron la cuenta.
+3. Coeficiente de variación:
+   - Los clientes que adquirieron la cuenta tienen un coeficiente de variación mayor (1.163 frente a 0.947), lo que confirma que existe mayor variabilidad relativa en comparación con los que no adquirieron la cuenta.
+4. Máximo y Rango:
+   - El máximo número de contactos es significativamente mayor para los clientes que adquirieron la cuenta (50 frente a 21), lo que puede indicar que, en algunos casos, un mayor número de intentos está relacionado con la decisión de adquirir la cuenta.
+   - El rango también es más amplio para quienes adquirieron la cuenta (49 frente a 20), lo que reafirma que existe mayor dispersión.
+5. Moda:
+   - La moda en ambos grupos es 1, lo que indica que el número más frecuente de contactos realizados fue uno solo. Esto puede estar relacionado con un esfuerzo inicial que no necesariamente garantiza el éxito.
+
+#### Objetivo 5
 
 > Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
-
-```{r}
-full_summary(df$pdias)
-
-hist(df$pdias)
-```
-
-## Análisis descriptivo
