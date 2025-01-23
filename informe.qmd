@@ -529,6 +529,11 @@ A partir de estas medidas podemos realizar las siguientes observaciones:
 5. Moda:
    - La moda en ambos grupos es 1, lo que indica que el número más frecuente de contactos realizados fue uno solo. Esto puede estar relacionado con un esfuerzo inicial que no necesariamente garantiza el éxito.
 
+Otras conclusiones que podemos obtener de este análisis son:
+
+1. El número de contactos realizados (campana) es similar en promedio para ambos grupos, pero quienes adquirieron la cuenta muestran mayor dispersión, rango y un valor máximo más alto.
+2. Esto sugiere que, aunque el número promedio de contactos no varía mucho, en algunos casos, un mayor número de contactos parece estar relacionado con la adquisición de la cuenta.
+
 #### Objetivo 5
 
 > Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
