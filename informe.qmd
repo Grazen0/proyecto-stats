@@ -56,7 +56,7 @@ library("knitr")
 Ahora, leemos el CSV con los datos y mostramos un breve vistazo con las primeras 12 observaciones:
 
 ```{r}
-df <- read_csv("data/AdquisicionAhorro.csv")
+df <- read_csv("AdquisicionAhorro.csv")
 kable(df[1:12, ])
 ```
 
@@ -313,7 +313,80 @@ full_summary <- function(x) {
 
 #### Balance
 
+Primero, graficamos un histograma:
+
+```{r}
+full_summary(df$balance)
+hist(df$balance, main = "Histograma del balance de los encuestados", xlab = "balance")
+```
+
+Sin embargo, el histograma no parece ser de mucha utilidad inicialmente. Un diagrama de cajas muestra por qué: los datos atípicos.
+
+```{r}
+boxplot(df$balance, main = "Diagrama de caja del balance")
+```
+
+Como `balance` tiene una cantidad considerable de datos atípicos, conviene también graficar únicamente los datos dentro del rango intercuartílico para visualizar el "montón" principal de datos.
+
+```{r}
+filter_outliers <- function(x, factor = 1.5) {
+  iqr = IQR(x)
+  lower_bound = quantile(x, 0.25) - factor * iqr
+  upper_bound = quantile(x, 0.75) + factor * iqr
+  iqr_balances = x[x >= lower_bound & x < upper_bound]
+}
+
+hist(
+  filter_outliers(df$balance, 0),
+  main = "Histograma del balance de los encuestados (rango intercuartílico)",
+  xlab = "balance"
+)
+```
+
 #### Mora
+
+Ahora graficamos `mora`:
+
+```{r}
+full_summary(df$mora)
+
+mora_table <- table(df$mora)
+bars <- barplot(mora_table, col = rainbow(2), main = "Estado de mora de los encuestados", ylim = c(0, 2400))
+text(bars, mora_table + 100, labels = mora_table)
+
+```
+
+De este grafico podemos observar que tener mora no es muy común en la muestra que tenemos (1.47%)
+
+```{r}
+moda_mora_adq <- mfv(df$mora[df$adq_ahorro==1])
+cat("Moda de los que si adquirieron:",moda_mora_adq,"\n")
+
+moda_mora_noadq <- mfv(df$mora[df$adq_ahorro==0])
+cat("Moda de los que no adquirieron:",moda_mora_noadq,"\n")
+```
+
+Y en ambos casos, la moda de la mora es que no se cuenta con un estado de mora.
+
+Habiendo expresado de forma visual el balance y la mora, podemos realizar comparaciones con la variable relacionada a la adquisicion de la cuenta de ahorro.
+
+```{r}
+boxplot(df$balance~df$adq_ahorro,ylim=c(0,4000),xlab="Adquisición de la cuenta de ahorro (0 = no, 1 = sí)",ylab="Balance", main="Diagrama de caja del balance", col = rainbow(length(unique(df$adq_ahorro))))
+```
+
+```{r}
+writeLines("Balance del personas que si adquirieron la cuenta de ahorros:")
+full_summary(df$balance[df$adq_ahorro==1])
+cat("CV:",sd(df$balance[df$adq_ahorro==1])/mean(df$balance[df$adq_ahorro==1]))
+
+writeLines("\n\nBalance del personas que no adquirieron la cuenta de ahorros:")
+full_summary(df$balance[df$adq_ahorro==0])
+cat("CV:",sd(df$balance[df$adq_ahorro==0])/mean(df$balance[df$adq_ahorro==0]))
+```
+
+Aunque Q1 y la mediana (Q2) se mantengan bastante similares, Q3 es visiblemente mayor para las personas que si adquirieron la cuenta de ahorros. Además, la desviacion estandar es considerablemente mayor para los casos donde si adquirieron la cuenta.
+
+Ahora comparando con la mora, realizamos una tabla de doble entrada para comparar las dos variables dicotomicas:
 
 #### Edad
 
@@ -430,6 +503,43 @@ Además, es debido a estos datos atípicos tan altos que el coeficiente de varia
 
 > Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
 
+```{r}
+tabla_moravsadq <- table(df$adq_ahorro,df$mora)
+tabla_moravsadq
+```
+
+Y ahora la utilizamos para generar un diagrama de mosaico:
+
+```{r}
+mosaicplot(tabla_moravsadq,main="Diagrama de mosaico",ylab = "Mora",xlab = "Adquisicion de la cuenta de ahorro (0 = no, 1 = si)")
+```
+
+El grafico resulta aplastado ya que la cantidad de obseraciones donde si se tiene mora es muy pequeña, seria apropiado entonces tener un enfoque en los porcentajes de la tabla de doble entrada:
+
+```{r}
+
+tabla_doble_entrada <- prop.table(table(df$adq_ahorro,df$mora),margin=2)
+round(tabla_doble_entrada*100,2)
+```
+
+```{r}
+tabladf <- as.data.frame.matrix(tabla_doble_entrada)
+
+data_long <- pivot_longer(tabladf, cols = c(si,no), names_to = "Mora", values_to = "Porcentaje")
+data_long$Group <- rep(c("0", "1"), each = 2)
+
+
+ggplot(data_long, aes(x = Mora, y = Porcentaje, fill = Group)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.2f%%", Porcentaje * 100)), 
+            position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_manual(values = c("skyblue", "lightcoral")) +
+  labs(x = "Mora", y = "Porcentaje", fill = "Adquisición (0 = no, 1 = sí)") +
+  scale_y_continuous(labels = scales::percent)
+```
+
+Ahora podiendo apreciar un gráfico más proporcional, podemos observar que hay una proporción *ligeramente* mayor de personas que aceptan la cuenta de ahorros cuando si cuentan con mora.
+
 #### Objetivo 2
 
 > Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
@@ -523,7 +633,7 @@ A partir de estas medidas podemos realizar las siguientes observaciones:
    - Es decir, el número de contactos es más variable para los clientes que adquirieron la cuenta.
 3. Coeficiente de variación:
    - Los clientes que adquirieron la cuenta tienen un coeficiente de variación mayor (1.163 frente a 0.947), lo que confirma que existe mayor variabilidad relativa en comparación con los que no adquirieron la cuenta.
-4. Máximo y Rango:
+4. Máximo y rango:
    - El máximo número de contactos es significativamente mayor para los clientes que adquirieron la cuenta (50 frente a 21), lo que puede indicar que, en algunos casos, un mayor número de intentos está relacionado con la decisión de adquirir la cuenta.
    - El rango también es más amplio para quienes adquirieron la cuenta (49 frente a 20), lo que reafirma que existe mayor dispersión.
 5. Moda:
