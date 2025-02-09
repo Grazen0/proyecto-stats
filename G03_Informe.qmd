@@ -1,0 +1,681 @@
+---
+title: Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria
+author:
+  - José Daniel Grayson Tejada (líder)
+  - Fali Ferdinand Araoz Arana
+  - Leisy Valeska Bendezu Choque
+  - Daniela Landavery Vergaray
+  - Vincenzo Francisco Magnani Castro
+lang: es
+editor: visual
+toc: true
+format:
+  html:
+    toc: true
+    toc-depth: 4
+    fig-cap-location: top
+embed-resources: true
+number-sections: true
+---
+
+## Introducción
+
+### Relevancia
+
+El marketing es una disciplina fundamental para las empresas, ya que permite atraer clientes y promover productos o servicios de manera estratégica. A través de diversas herramientas y canales, las organizaciones buscan optimizar sus esfuerzos para lograr una mayor eficiencia en sus campañas.
+
+En el caso de una institución bancaria, gran parte del marketing se realiza mediante llamadas telefónicas para ofrecer productos financieros como cuentas de ahorro. Para mejorar la eficiencia de estas campañas, el perfilamiento de clientes resulta clave. Mediante la segmentación basada en características financieras y demográficas, se pueden identificar los clientes con mayor probabilidad de aceptar la oferta. Esto permite reducir el número de llamadas innecesarias y mejorar los resultados de la estrategia de marketing. Este proyecto se basa en el análisis de datos de una campaña telefónica de un banco para optimizar el proceso de captación de clientes interesados en abrir una cuenta de ahorro.
+
+### Planificación
+
+Las fechas que indica el eje horizontal del diagrama son todas del año 2025, pero ello se omite para mayor claridad en las etiquetas.
+
+```{mermaid}
+gantt
+  title Planificación del proyecto
+  dateFormat DD-MM-YYYY
+  axisFormat %d-%m
+  todayMarker off
+  section Avance 1
+    (Daniela) Definición de objetivos                               :done,    2025-01-9,  2d
+    (José) Transformación de datos                                  :done,    2025-01-11, 1d
+    (Fali y José) Tratamiento de datos faltantes                    :done,                3d
+    (Todos) Revisión final                                          :done,    2025-01-15, 1d
+  section Avance 2
+    (Leisy y Vincenzo) Organización de datos                        :done,    2025-01-18, 3d
+    (Vincenzo) Análisis descriptivo (objetivo 1)                    :done,    2025-01-19, 3d
+    (José) Análisis descriptivo (objetivo 2)                        :done,    2025-01-19, 3d
+    (Leisy) Análisis descriptivo (objetivo 3)                       :done,    2025-01-20, 2d
+    (Daniela) Análisis descriptivo (objetivo 4)                     :done,    2025-01-20, 2d
+    (Fali) Análisis descriptivo (objetivo 5)                        :done,    2025-01-21, 3d
+    (Todos) Revisión final                                          :done,    2025-01-23, 2d
+  section Informe
+    (Fali) Introducción (relevancia)                                :done,    2025-01-28, 2d
+    (Daniela) Datos (población objetivo)                            :done,    2025-01-29, 1d
+    (José) Datos (tipo de muestreo)                                 :done,    2025-01-29, 1d
+    (Fali y Daniela) Datos (tratamiento de datos)                   :done,    2025-01-29, 2d
+    (José) Datos (variables, limpieza)                              :done,    2025-01-30, 4d
+    (Vincenzo y José) Análisis descriptivo (organización de datos)  :done,    2025-01-31, 2d
+    (Leisy) Análisis descriptivo (medidas de resumen)               :done,    2025-01-31, 3d
+    (José y Daniela) Conclusiones                                   :done,    2025-02-03, 2d
+    (Todos) Revisión final                                          :done     2025-02-05, 1d
+```
+
+### Objetivos
+
+#### Objetivo general
+
+El objetivo principal de este proyecto es conocer los factores que influyen en la aceptación de una cuenta de ahorro vía telefónica para los clientes de una entidad bancaria a través de la identificación de patrones usando el análisis estadístico.
+
+#### Objetivos específicos {#sec-specific-objectives}
+
+Dentro del marco del objetivo general, nuestro grupo considera los siguientes objetivos específicos:
+
+1. Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
+2. Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
+3. Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
+4. Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
+5. Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
+
+Cabe destacar que en todos estos objetivos se hace presente la variable `adq_ahorro` como la variable dependiente a analizar.
+
+## Datos
+
+### Población objetivo
+
+Acorde con el [enlace](https://www.kaggle.com/competitions/estadstica-para-ciencia-de-datos/data) provisto en la referencia del documento informativo sobre los datos, la población objetivo de este proyecto son los clientes del banco "RICARDO PALMA BANK".
+
+### Tipo de muestreo
+
+Dado que los datos con los que trabajamos en este proyecto fueron provistos por los docentes del curso y no hay suficiente información sobre su origen, no se puede determinar con certeza el tipo de muestreo utilizado para recolectarlos. Sin embargo, algunos tipos de muestreo que se podría haber utilizado son los siguientes:
+
+- **Muestreo por juicio**: Es posible que el banco y el área de marketing hayan escogido la muestra según un criterio a experiencia.
+- **Muestreo sistemático:** De forma similar al anterior, es posible que el banco haya escogido clientes de una base de datos a partir de cierto punto inicial y con algún intervalo entre clientes elegidos.
+
+### Tratamiento de datos {#sec-treatment}
+
+```{r}
+#| echo: false
+#| output: false
+library_checked <- function(lib_name) {
+  if (!require(lib_name, character.only = TRUE)) {
+    install.packages(lib_name)
+  }
+
+  require(lib_name, character.only = TRUE)
+}
+
+library_checked("dplyr")
+library_checked("tidyr")
+library_checked("readr")
+library_checked("modeest")
+library_checked("ggplot2")
+library_checked("knitr")
+```
+
+En esta sección mostraremos el estado actual de los datos, lo que falta arreglar y cómo lo arreglaremos en la @sec-cleaning.
+
+```{r}
+df <- suppressMessages(read_csv("AdquisicionAhorro.csv"))
+df
+```
+
+En total, la tabla tiene `r ncol(df)` columnas (es decir, variables) y `r nrow(df)` filas (es decir, observaciones).
+
+Podemos notar que la variable `balance`, en lugar de ser teóricamente numérica, es de tipo "texto". Esto significa que contiene al menos un dato que no se puede convertir a un número. Arreglaremos esto con `as.numeric`, forzando convertir la columna a números y dejando aquellos valores no numéricos como `NA`.
+
+Podemos observar también los datos faltantes por columna:
+
+```{r}
+colSums(is.na(df))
+```
+
+En total, esto constituye `r sum(is.na(df))` datos faltantes, lo cual es aproximadamente un `r round(100 * sum(is.na(df)) / (ncol(df) * nrow(df)))`% del total de `r ncol(df) * nrow(df)` datos presentes en la tabla. En términos de observaciones, los datos contienen `r sum(!complete.cases(df))` observaciones con algún dato faltante, lo cual es un `r round(100 * sum(!complete.cases(df)) / nrow(df))`% del total. Además, la columna `educacion` contiene `r sum(na.omit(df$educacion) == "desconocido")` datos de tipo `"desconocido"`. Este valor, en la práctica, es equivalente a un dato faltante (`NA`), así que también será tratado con el resto de datos faltantes.
+
+Los datos faltantes, en su mayoría, serán tratados mediante **imputación de datos**. Usaremos la moda para las variables categóricas y media o mediana para las numéricas (según el criterio del coeficiente de variación). Sin embargo, para la columna `pdias`, optamos por eliminar las observaciones donde esta variable sea `NA`. Tomamos esta decisión porque esta variable no sólo contiene números, sino valores "nulos" encodificados como `-1`, por lo que la media o mediana podrían no ser representativas. De todas maneras, `pdias` solo tiene un dato faltantes, así que esta decisión no causa mayor problema.
+
+En el caso de `adq_ahorro`, si tuviese datos faltantes (porque no los tiene), optaríamos también por eliminar sus observaciones correspondientes. Este es un caso especial, porque `adq_ahorro` es la variable dependiente del análisis, así que no sería prudente imputar en dicha variable.
+
+En tercer lugar, como veremos más adelante, esta tabla no contiene datos fuera de los rangos apropiados para cada variable. Sin embargo, de no haber sido así, optaríamos por reemplazar dichos datos por `NA` y tratarlos junto al resto de datos faltantes.
+
+### Variables {#sec-variables}
+
+De acuerdo a los objetivos específicos de este informe (véase @sec-specific-objectives), las variables que consideraremos para este análisis son las siguientes:
+
+: Variables a utilizar en el proyecto {#tbl-variables}
+
+| Variable                                           |              Tipo               | Descripción                                                                                                                   | Restricciones                                       |
+| :------------------------------------------------- | :-----------------------------: | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
+| **Edad** (`edad`)                                  |      cuantitativa discreta      | La edad del encuestado.                                                                                                       | Mayor o igual a $18$.                               |
+| **Estado civil** (`estciv`)                        |       cualitativa nominal       | El estado civil del encuestado.                                                                                               | Uno de `"married` `"single"`, `"divorced"`.         |
+| **Educación** (`educacion`)                        |       cualitativa ordinal       | El nivel educativo con el que cuenta el encuestado.                                                                           | Uno de `"primaria"`, `"secundaria"`, `"terciaria"`. |
+| **Mora** (`mora`)                                  | cualitativa nominal, dicotómica | Indica si el encuestado posee crédito en mora.                                                                                | Uno de `"si"`, `"no"`.                              |
+| **Balance** (`balance`)                            |      cuantitativa continua      | El balance promedio anual en euros del encuestado.                                                                            | Mayor o igual a $0$.                                |
+| **Campaña** (`campana`)                            |      cuantitativa discreta      | El número de contactos realizados con el encuestado durante la presente campaña, incluyendo el último contacto.               | Mayor a $0$.                                        |
+| **PDias** (`pdias`)                                |      cuantitativa discreta      | Número de días transcurridos desde el último contacto con el encuestado (o `-1` en caso no haya sido contactado previamente). | Mayor a $0$ o igual a $-1$.                         |
+| **Adquisición de cuenta de ahorro** (`adq_ahorro`) | cualitativa nominal, dicotómica | Indica si el encuestado suscribió un depósito a plazo (es decir, si adquirió la cuenta de ahorro).                            | Igual a $0$ o a $1$.                                |
+
+:::{.callout-note}
+Algunos detalles relevantes:
+
+1. Clasificamos a `adq_ahorro` como cualitativa (y dicotómica) porque es esencialmente un sí/no codificado como 1/0.
+2. Establecemos un límite inferior de 18 años para `edad` porque es la edad mínima para abrir una cuenta de banco.
+
+:::
+
+### Limpieza {#sec-cleaning}
+
+Las siguientes funciones nos serán útiles a lo largo de lo que resta del documento.
+
+```{r}
+# Redondea un número a 2 decimales
+r <- function(x) {
+  return(round(x, digits = 2))
+}
+
+# Calcula el coeficiente de variación de `x`
+cv <- function(x, na.rm = FALSE) {
+  return(sd(x, na.rm = na.rm) / mean(x, na.rm = na.rm))
+}
+```
+
+#### Transformación de datos
+
+Renombraremos la última columna de `df` para tener consistencia entre los nombres de todas las columnas:
+
+```{r}
+if ("Adq_Ahorro" %in% colnames(df)) {
+  df <- df %>% rename(adq_ahorro = Adq_Ahorro)
+}
+```
+
+##### Eliminación de variables innecesarias
+
+Acorde con los objetivos establecidos, conservaremos únicamente las variables mencionadas en la @sec-variables.
+
+```{r}
+df <- df %>% select(edad, estciv, educacion, mora, balance, campana, pdias, adq_ahorro)
+```
+
+##### Arreglo del tipo de `balance`
+
+Usaremos la función `as.numeric` para convertir a la fuerza los datos de `balance` a números. Los que no se puedan convertir correctamente se convertirán en `NA`.
+
+```{r}
+df <- df %>% mutate(balance = as.numeric(balance))
+```
+
+#### Tratamiento de datos faltantes
+
+##### Imputación de datos
+
+Para las variables categóricas, imputaremos como reemplazo a los datos faltantes la **moda** de los datos existentes.
+
+```{r}
+df <- df %>% mutate(
+  estciv = replace_na(estciv, mfv(estciv)),
+  educacion = replace(educacion, is.na(educacion) | educacion == "desconocido", mfv(educacion)),
+  mora = replace_na(mora, mfv(mora))
+)
+```
+
+::: {.callout-note}
+Nótese que en la columna `educacion` imputamos también sobre las celdas que contienen `"desconocido"`, como se mencionó en la @sec-treatment.
+:::
+
+Para las variables numéricas, consideramos dos métodos de imputación: la **media** y la **mediana**. La selección de la medida a usar para imputar los datos faltantes se hará según el coeficiente de variación.
+
+```{r}
+apply(df %>% select(edad, balance, campana), 2, function(x) cv(x, na.rm = TRUE))
+```
+
+El criterio que usaremos es el siguiente:
+
+- Si $\text{CV} < 30\%$, entonces se imputará la **media**, ya que los datos son homogéneos.
+- Si $\text{CV} \geq 30\%$, entonces se imputará la **mediana**, ya que los datos se inclinan más hacia ser heterogéneos.
+
+Además, si la variable imputada debe ser discreta, el valor de reemplazo se redondea al entero más cercano.
+
+```{r}
+df <- df %>% mutate(
+  edad = replace_na(edad, round(mean(edad, na.rm = TRUE))),           # CV = 0.26: media redondeada
+  balance = replace_na(balance, median(balance, na.rm = TRUE)),       # CV = 2.08: mediana
+  campana = replace_na(campana, round(median(campana, na.rm = TRUE))) # CV = 1.13: mediana redondeada
+)
+```
+
+##### Eliminación de observaciones
+
+Como mencionamos en la @sec-treatment, se eliminarán las observaciones donde `pdias` tenga valor faltante. Como en este caso solo es una observación, no causa problemas.
+
+```{r}
+df <- df %>% filter(!is.na(pdias))
+```
+
+#### Comprobaciones finales
+
+##### Búsqueda de datos atípicos
+
+Para las variables numéricas, es prudente comprobar que la data no salga de rangos realistas (no debería haber alguna edad, por ejemplo, de 200 años).
+
+```{r}
+summary(df %>% select(edad, balance, campana, pdias))
+```
+
+La columna `edad` presenta un rango aceptable: de `r min(df$edad)` a `r max(df$edad)` años.
+
+La columna `balance`, por su máximo, podría levantar sospechas. Sin embargo, un diagrama de caja ayuda a visualizar que la mayoría de datos se encuentran alrededor de la mediana de `r median(df$edad)` euros.
+
+```{r}
+#| echo: false
+#| label: fig-balance-boxplot
+#| fig-cap: Balance promedio anual de los encuestados
+
+boxplot(
+  df$balance,
+  main = "Balance promedio anual",
+  ylab = "Balance (euros)"
+)
+```
+
+El valor máximo de `balance` es un valor atípico pero posible, por lo que debe ser conservado.
+
+La columna `campana` también podría levantar sospechas, pero su diagrama de caja nos facilita una conclusión similar a la anterior:
+
+```{r}
+#| echo: false
+#| label: fig-campana-boxplot
+#| fig-cap: Número de contactos realizados durante la campaña
+
+boxplot(
+  df$campana,
+  main = "Número de contactos realizados durante la campaña",
+  ylab = "Número de contactos"
+)
+```
+
+El máximo de `campana`, aunque es comparablemente alto al resto, es posible en la vida real.
+
+Finalmente, conviene para una comprobación de `pdias` obviar los valores `-1`, de forma que analicemos solamente sus valores no-nulos.
+
+```{r}
+summary(df$pdias[df$pdias != -1])
+```
+
+Ocurre un caso similar a los anteriores.
+
+```{r}
+#| echo: false
+#| label: fig-pdias-boxplot
+#| fig-cap: Días desde el último contacto al cliente
+
+boxplot(
+  df$pdias,
+  main = "Días desde el último contacto al cliente",
+  ylab = "Días desde el último contacto"
+)
+```
+
+La mayoría de los datos de `pdias` se encuentran alrededor de la mediana, `r median(df$pdias[df$pdias != -1])`, mientras que los más altos son pocos y, en cualquier caso, posibles en la vida real.
+
+##### Consistencia de las variables categóricas
+
+Finalmente, es preciso comprobar que las variables categóricas tengan valores consistentes. Por ejemplo, la columna `estciv` no debería contener valores como, por ejemplo, `"Married"` o `"SINGLE"`.
+
+Para esto, podemos calcular los valores únicos de cada variable categórica:
+
+```{r}
+apply(df %>% select(estciv, educacion, mora, adq_ahorro), 2, unique)
+```
+
+Podemos comprobar que las variables categóricas tienen valores consistentes.
+
+#### Resultado final
+
+Mostramos a continuación un vistazo al resultado de la base de datos tras la limpieza:
+
+```{r}
+summary(df)
+df
+```
+
+Además, podemos comprobar que está libre de datos faltantes:
+
+```{r}
+colSums(is.na(df))
+```
+
+## Análisis descriptivo
+
+Utilizaremos la siguiente función para algunos gráficos donde queramos observar una cierta porción de los datos alrededor de la mediana.
+
+```{r}
+filter_outliers <- function(x, factor = 1.5) {
+  iqr = IQR(x)
+  lower_bound = quantile(x, 0.25, type = 3) - factor * iqr
+  upper_bound = quantile(x, 0.75, type = 3) + factor * iqr
+  return(x[x >= lower_bound & x < upper_bound])
+}
+```
+
+### Organización de datos
+
+Se presentan aquí, por objetivo, las gráficos que serán referenciados en el análisis de medidas de resumen (véase @sec-medidas).
+
+#### Objetivo 1
+
+```{r}
+#| echo: false
+#| label: fig-balance-adq
+#| fig-cap: Balance por adquisición de cuenta
+
+boxplot(
+  df$balance ~ df$adq_ahorro,
+  ylim = c(0, 4000),
+  main = "Balance por adquisición de cuenta",
+  xlab = "Adquisición de la cuenta de ahorro",
+  ylab = "Balance (euros)",
+  names = c("no", "sí"),
+  col = c("hotpink", "lightblue3")
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-adq-mora
+#| fig-cap: Porcentaje de adquisición por mora
+
+tabla_doble_entrada <- prop.table(table(df$adq_ahorro, df$mora), margin=2)
+tabladf <- as.data.frame.matrix(tabla_doble_entrada)
+
+data_long <- pivot_longer(tabladf, cols = c(si,no), names_to = "Mora", values_to = "Porcentaje")
+data_long$Group <- rep(c("0", "1"), each = 2)
+
+
+ggplot(data_long, aes(x = Mora, y = Porcentaje, fill = Group)) +
+  ggtitle("Porcentaje de adquisición por mora") +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.2f%%", Porcentaje * 100)), 
+            position = position_stack(vjust = 0.5), size = 4) +
+  scale_fill_manual(values = c("lightblue3", "hotpink")) +
+  labs(x = "Mora", y = "Porcentaje", fill = "Adquisición (0 = no, 1 = sí)") +
+  scale_y_continuous(labels = scales::percent)
+```
+
+#### Objetivo 2
+
+```{r}
+#| echo: false
+#| label: fig-edad-adq
+#| fig-cap: Edad por adquisición de cuenta de ahorro
+
+boxplot(
+  df$edad ~ df$adq_ahorro,
+  main = "Edad por adquisición de cuenta de ahorro",
+  xlab = "Adquisición de la cuenta de ahorro", 
+  ylab = "Edad (años)",
+  names = c("no", "sí"),
+  col = c("lightblue3", "hotpink")
+)
+```
+
+```{r}
+#| echo: false
+#| label: tbl-edad-adq
+#| tbl-cap: Medidas de resumen de edad por adquisición de cuenta
+
+kable(
+  df %>% 
+    group_by(adq_ahorro) %>%
+    summarise(
+      min = min(edad),
+      q1 = quantile(edad, 0.25, type = 3),
+      mediana = median(edad),
+      media = mean(edad),
+      q3 = quantile(edad, 0.25, type = 3),
+      max = max(edad),
+      rango = max(edad) - min(edad),
+      cv = cv(edad),
+      sd = sd(edad),
+    ) %>%
+    r()
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-estciv-adq
+#| fig-cap: Estado civil por adquisición de cuenta
+
+mosaicplot(
+  table(df$adq_ahorro, df$estciv),
+  main = "Estado civil por adquisición de cuenta (0 = no, 1 = sí)",
+  xlab = "Adquisición de cuenta",
+  ylab = "Estado civil",
+  color = c( "pink", "hotpink", "deeppink")
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-edad-estciv
+#| fig-cap: Edad por estado civil
+
+boxplot(
+  df$edad ~ df$estciv,
+  main = "Edad por estado civil",
+  xlab = "Estado civil",
+  ylab = "Edad (años)",
+  col = c("hotpink", "plum",  "lightblue3")
+)
+```
+
+#### Objetivo 3
+
+```{r}
+#| echo: false
+#| label: fig-adq-educacion
+#| fig-cap: Adquisición de cuenta por nivel educativo
+
+data <- table(df$educacion, df$adq_ahorro)
+mosaicplot(data,
+  main = "Adquisición de cuenta por nivel educativo",
+  xlab = "Nivel educativo",
+  ylab = "Adquisición de cuenta (0 = no, 1 = sí)",
+  color = c("lightblue3", "hotpink")
+)
+legend(
+  "bottomright",                       
+  legend = c("No (0)", "Sí (1)"),
+  fill = c("lightblue3", "hotpink"),
+  title = "Adquisición de cuenta"
+)
+```
+
+#### Objetivo 4
+
+<!-- TODO: debe existir un mejor grafico para mostrar atipicos -->
+
+```{r}
+#| echo: false
+#| label: fig-campana-adq
+#| fig-cap: Número de contactos previos por adquisición de cuenta
+
+ggplot(df, aes(x = factor(adq_ahorro), y = campana, fill = factor(adq_ahorro))) +
+  geom_boxplot(alpha = 0.9) +
+  labs(
+    title = "Número de contactos previos por adquisición de cuenta",
+    x = "Adquisición de cuenta (1 = Sí, 0 = No)",
+    y = "Número de contactos previos (campana)",
+    fill = "Adquirió cuenta"
+  ) + 
+  scale_fill_manual(values = c("0" = "lightblue3", "1" = "hotpink")) +
+  theme_light()
+```
+
+:::{.callout-note}
+Aunque las cajas de este gráfico salen aplanadas debido al rango que abarcan los datos atípicos, escogimos este gráfico precisamente para mostrar dichos datos atípicos (más que para mostrar los quartiles).
+:::
+
+```{r}
+#| echo: false
+#| label: tbl-campana-adq
+#| tbl-cap: Medidas de resumen de campaña por adquisición de cuenta
+
+kable(
+  df %>% 
+    group_by(adq_ahorro) %>%
+    summarise(
+      media = mean(campana),
+      mediana = median(campana),
+      moda = mfv(campana),
+      cv = cv(campana),
+      max = max(campana),
+      min = min(campana),
+      rango = max(campana) - min(campana),
+      sd = sd(campana),
+    ) %>%
+    r()
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-campana-no-outlier
+#| fig-cap: Contactos previos en la campaña (sin atípicos)
+
+campana_table <- table(filter_outliers(df$campana))
+
+barplot(
+  campana_table,
+  main = "Contactos previos en la campaña (sin atípicos)",
+  xlab = "Número de contactos (campana)",
+  ylab = "Frecuencia",
+  col= "hotpink"
+)
+```
+
+#### Objetivo 5
+
+```{r}
+#| echo: false
+#| label: fig-pdias-adq
+#| fig-cap: Días desde último contacto por adquisición de cuenta
+
+df_aux <- df[df$pdias != -1, ]
+boxplot(
+  df_aux$pdias ~ df_aux$adq_ahorro,
+  names = c("No", "Si"),
+  col = c("lightblue3", "hotpink"), 
+  main = "Días desde último contacto por adquisición de cuenta", 
+  ylab = "Días desde el último contacto (pdias)", 
+  lab = "Adquisición de la cuenta"
+)
+```
+
+```{r}
+#| echo: false
+#| label: fig-adq-no-contactados
+#| fig-cap: Adquisición de cuenta (clientes no contactados previamente)
+
+df_aux_2 <- df[df$pdias == -1, ]
+pdias_table <- table(df_aux_2$adq_ahorro)
+
+colors <- c("hotpink", "lightblue3")
+pdias_table <- table(df$pdias != -1)
+labels <- paste0(r(100 * pdias_table / sum(pdias_table)), "%")
+
+pie(
+  pdias_table,
+  main = "Adquisición de cuenta (clientes no contactados previamente)",
+  labels = labels,
+  col = colors
+)
+legend("topleft", legend = c("Sí adquirió", "No adquirió"), fill = colors)
+```
+
+### Medidas de resumen {#sec-medidas}
+
+#### Análisis univariado
+
+Para este proyecto, el análisis univariado no es de mucha utilidad más allá de ofrecer vistazos generales a cada variable, lo cual no aporta a nuestros objetivos. Sin embargo, el **objetivo 4** (el cual será mejor profundizado en la @sec-objective-4), hace uso de uno de estos gráficos.
+
+Con respecto a la variable `campana`, de la @fig-campana-no-outlier (de la cual se excluyen los datos atípicos por claridad) se puede observar que la mayoría de los encuestados aceptaron o rechazaron la apertura de la cuenta de ahorro en el primer contacto, dado que la moda de esta variable es 1. Este resultado sugiere la relevancia de la primera impresión que el banco genera en sus clientes.
+
+Consideramos a la moda como la medida mejor representativa de esta variable para este análisis debido a la conclusión mencionada anteriormente. El resto medidas de esta variable serán analizadas de forma bivariada en la sección de su objetivo correspondiente, ya que, salvo el análisis anterior, analizarla de forma univariada no contribuye a nuestros objetivos.
+
+#### Análisis bivariado
+
+##### Objetivo 1
+
+> Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
+
+Para el análisis de balance y mora, es fundamental realizar comparaciones detalladas entre las variables que nos interesan, especialmente en relación con la variable relacionada a la adquisición de la cuenta de ahorro. Con respecto a `balance`, al analizar la @fig-balance-adq se puede apreciar que el primer cuartil y la mediana se mantienen bastante similares entre aquellos que han adquirido la cuenta de ahorro y aquellos que no lo han hecho.
+
+Sin embargo, al observar el tercer cuartil, se nota que este valor es visiblemente mayor en el grupo de personas que sí adquirieron la cuenta de ahorro, lo que indica una mayor concentración de valores altos en esta categoría. Además, la desviación estándar es considerablemente mayor en el grupo que posee la cuenta, lo que implica una mayor dispersión de los datos y, por lo tanto, una mayor heterogeneidad en los balances registrados. Este fenómeno puede ser indicativo de comportamientos financieros más variados entre los clientes que optan por esta modalidad.
+
+Con respecto a `mora`, es importante señalar que solo una pequeña minoría de los encuestados (específicamente, el `r 100 * r(sum(df$mora == "si") / length(df$mora))`%) presenta mora. No obstante, esta baja frecuencia no descarta que la mora pueda ser un factor importante al momento de estudiar la relación entre la salud financiera y la adopción de la cuenta de ahorro.
+
+En este sentido, la figura @fig-adq-mora revela que existe una proporción ligeramente mayor de personas que aceptan la cuenta de ahorro cuando presentan mora. Sin embargo, es posible que no sea apropiado tomar esta conclusión con mucha seguridad, ya que la muestra de encuestados con mora es extremadamente pequeña y podría no ser representativa de la población.
+
+##### Objetivo 2
+
+> Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
+
+En cuanto a `edad`, podemos analizar posibles diferencias entre las edades por adquisición de cuenta (véase @fig-edad-adq). En general, los cuartiles de las edades de los encuestados que adquirieron y no adquirieron la cuenta están relativamente cerca. Esta similitud se puede confirmar numéricamente mediante la @tbl-edad-adq, la cual muestra que la mediana y los cuartiles 1 y 3 son similares, si es que no exactamente iguales.
+
+Sin embargo, una observación interesante de este gráfico es que la mayoría de encuestados con edades atípicas (por encima de los ~70 años) sí adquirieron la cuenta de ahorro. Esto podría significar que existe un patrón recurrente con los clientes de dichas edades.
+
+En cuanto a `esticv`, nuevamente podemos realizar una comparación entre quienes adquirieron la cuenta de ahorro y quienes no lo hicieron (véase @fig-estciv-adq). Sin embargo, parece que, a primera vista, no hay una diferencia significativa entre el estado civil de quienes adquirieron la cuenta de ahorro y quienes no. Pese a ello, podemos notar que, entre las personas que sí adquirieron la cuenta, hay *ligeramente* menos individuos casados (divorciados, en su lugar) en comparación a quienes no la adquirieron.
+
+Finalmente, podemos realizar un análisis de las edades por estado civil. (véase @fig-edad-estciv). Se puede observar de aquí que las personas solteras tienden a tener edades menores que las personas casadas o divorciadas, lo cual tiene sentido si consideramos que, intuitivamente, una persona mayor tiene más probabilidad de estar casada que una persona más joven. Además, se puede observar que la caja correspondiente a los individuos divorciados está muy ligeramente movida un poco más arriba que la de los individuos casados. No obstante, es una diferencia pequeña, así que bien podría ser producto de la aleatoriedad de los datos utilizados.
+
+##### Objetivo 3
+
+> Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
+
+Al igual que en los objetivos anteriores, podemos hacer una comparación entre el nivel educativo de los individuos que adquirieron la cuenta y los que no. Podemos observar de la @fig-adq-educacion que, a grandes rasgos, el nivel educativo de secundaria es el más propenso a adquirir cuentas de ahorro, aunque por un margen relativamente pequeño. En ese mismo sentido, es el nivel educativo de primaria el que menos adquisiciones de cuentas de ahorro tiene.
+
+Sin embargo, es relevante notar que el nivel de educación terciario no sea el predominante en la adquisición de la cuenta, ya que, intuitivamente, una persona con educación superior debería estar informada de mejores prácticas de finanzas. Sin embargo, esto se podría explicar si consideráramos que estas personas podrían haber rechazado la cuenta por ya contar con una en otro banco.
+
+:::{.callout-note}
+Cabe destacar que el diagrama @fig-adq-educacion no se ve afectado por el hecho de que la mayoría de encuestados (específicamente, el `r 100 * r(sum(df$educacion == "secundaria") / length(df$educacion))`%) tengan nivel educativo de secundaria, ya que observa a cada nivel educativo por separado independientemente del tamaño de su muestra particular.
+:::
+
+##### Objetivo 4 {#sec-objective-4}
+
+> Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
+
+Como se observa en la @fig-campana-adq y en la @tbl-campana-adq, se realizó el siguiente análisis de los datos correspondientes al número de contactos realizados durante la campaña.
+
+En primer lugar, al analizar la media y la mediana, se observa que estos valores son muy similares entre los dos grupos. Esto indica que, en promedio, el número de contactos realizados es prácticamente el mismo en ambos casos. Además, el hecho de que la mediana sea igual en ambos grupos sugiere que la distribución está centrada en torno a este valor.
+
+En cuanto a la desviación estándar y el coeficiente de variación, los clientes que adquirieron la cuenta presentan un valor más alto, lo que indica una mayor dispersión en el número de contactos realizados.
+
+Respecto al número máximo de contactos y el rango, se destaca que el valor máximo registrado es significativamente mayor para los clientes que adquirieron la cuenta (50 frente a 21). Esto sugiere que, en ciertos casos, un mayor número de intentos está asociado con la decisión de adquisición. Asimismo, el rango es más amplio para quienes adquirieron la cuenta (49 frente a 20), lo que reafirma la existencia de una mayor dispersión en este grupo.
+
+Por último, el análisis de la moda revela que, en ambos grupos, el valor más frecuente es 1. Esto indica que la mayoría de los clientes fueron contactados solo una vez, lo que podría sugerir que la decisión de aceptar o rechazar una cuenta de ahorro ocurre principalmente en el primer contacto.
+
+##### Objetivo 5
+
+> Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
+
+Podemos observar en la @fig-pdias-adq que la media y los cuartiles 1 y 3 para los clientes que adquirieron y no adquirieron la cuenta son ligeramente similares respectivamente, aunque no mucho. En promedio, los clientes que aceptan la cuenta han sido contactados más recientemente que aquellos que no la aceptan. En el gráfico de los clientes que adquirieron una cuenta se aprecia que es más alargada en la parte inferior, indicando que hay más clientes con tiempos de contacto recientes antes de aceptar la cuenta.
+
+Por estas razones, podría resultar útil analizar cómo fueron esos contactos telefónicos que quizá lograron persuadir de mejor manera a aquellos clientes para que en un corto plazo decidan adquirir una cuenta.
+
+Aquellos que sí adquirieron la cuenta también presentan un rango más amplio comparado a los que no adquirieron, lo que implica una mayor dispersión de los datos. Asimismo, estos últimos presentan datos atípicos, llegando incluso hasta alrededor de los 800 días.
+
+En la @fig-adq-no-contactados, en la cual tomamos en cuenta solo a los clientes que no fueron contactados previamente, observamos una clara superioridad en cuando a la cantidad de personas que sí adquirieron una cuenta respecto a los que no lo hicieron. Muchas personas adquirieron pese a no haber sido contactadas. Esto sugiere que el contacto telefónico no es una estrategia de marketing fuerte o, por lo menos, no necesaria y que probablemente estos clientes se convencieron de adquirir una cuenta por otros medios que deberían ser promovidos más que el contacto telefónico.
+
+## Análisis probabilístico
+
+## Conclusiones
+
+Considerando los análisis realizados en este informe, formulamos las siguientes conclusiones en base a cada uno de nuestros objetivos:
+
+1. Los balances de quienes adquirieron la cuenta de ahorro son, en general, superiores a los de quienes no la adquirieron. Además, se observa una proporción ligeramente mayor de personas con historial de mora que aceptan la cuenta de ahorro en comparación con aquellas sin mora.
+2. La mayoría de los encuestados con edades atípicas (mayores de 70 años) adquirieron la cuenta de ahorro, pero, en general, las distribuciones de edad entre ambos grupos presentan medias y medianas similares. Asimismo, entre quienes adquirieron la cuenta se observa una proporción ligeramente menor de individuos casados.
+3. En términos generales, las personas con nivel educativo de secundaria son ligeramente más propensas a adquirir una cuenta de ahorro. Por otro lado, el nivel educativo de primaria presenta la menor tasa de adquisición de cuentas de ahorro.
+4. El número promedio de contactos no varía significativamente entre quienes adquieren la cuenta y quienes no. Sin embargo, en algunos casos, un mayor número de contactos parece estar asociado con una mayor probabilidad de adquisición. Además, la mayoría de los encuestados tomaron la decisión de aceptar o rechazar la cuenta en el primer contacto, lo que sugiere la importancia de la primera impresión del banco en la decisión del cliente.
+5. Las personas que adquieren la cuenta de ahorro tienden a hacerlo en un período ligeramente menor tras el último contacto en comparación con quienes no la adquieren. Hay una cantidad considerable de clientes que adquirieron una cuenta sin haber sido contactados, por lo que sería apropiado investigar sobre las posibles formas en las que estos clientes pudieron haberse enterado de la cuenta de ahorro sin un contacto directo del banco.
