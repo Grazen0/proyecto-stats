@@ -148,7 +148,7 @@ De acuerdo a los objetivos específicos de este informe (véase @sec-specific-ob
 | :------------------------------------------------- | :-----------------------------: | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
 | **Edad** (`edad`)                                  |      cuantitativa discreta      | La edad del encuestado.                                                                                                       | Mayor o igual a $18$.                               |
 | **Estado civil** (`estciv`)                        |       cualitativa nominal       | El estado civil del encuestado.                                                                                               | Uno de `"married` `"single"`, `"divorced"`.         |
-| **Educación** (`educacion`)                        |       cualitativa ordinal       | El nivel educativo con el que cuenta el encuestado.                                                                           | Uno de `"primaria"`, `"secundaria"`, `"terciaria"`. |
+| **Educación** (`educacion`)                        |       cualitativa ordinal       | El nivel educativo con el que cuenta el encuestado.                                                                           | Uno de `"primaria"`, `"secundaria"`, `"terciario"`. |
 | **Mora** (`mora`)                                  | cualitativa nominal, dicotómica | Indica si el encuestado posee crédito en mora.                                                                                | Uno de `"si"`, `"no"`.                              |
 | **Balance** (`balance`)                            |      cuantitativa continua      | El balance promedio anual en euros del encuestado.                                                                            | Mayor o igual a $0$.                                |
 | **Campaña** (`campana`)                            |      cuantitativa discreta      | El número de contactos realizados con el encuestado durante la presente campaña, incluyendo el último contacto.               | Mayor a $0$.                                        |
@@ -669,6 +669,201 @@ Aquellos que sí adquirieron la cuenta también presentan un rango más amplio c
 En la @fig-adq-no-contactados, en la cual tomamos en cuenta solo a los clientes que no fueron contactados previamente, observamos una clara superioridad en cuando a la cantidad de personas que sí adquirieron una cuenta respecto a los que no lo hicieron. Muchas personas adquirieron pese a no haber sido contactadas. Esto sugiere que el contacto telefónico no es una estrategia de marketing fuerte o, por lo menos, no necesaria y que probablemente estos clientes se convencieron de adquirir una cuenta por otros medios que deberían ser promovidos más que el contacto telefónico.
 
 ## Análisis probabilístico
+
+### Probabilidad empírica
+
+#### Variable 1
+
+La primera variable aleatoria que analizaremos será el **nivel educativo** (`educacion`), de tipo *ordinal* con posibles valores $\text{primaria} < \text{secundaria} < \text{terciario}$, en ese orden. El análisis de probabilidades para esta variable puede ser de utilidad para caracterizar la demográfica a la que las campañas de marketing del banco deberían estar dirigidas.
+
+El espacio muestral de esta variable es
+
+$$
+\Omega = \{ \text{primaria}, \text{secundaria}, \text{terciario} \}
+.$$
+
+Esta variable corresponde al siguiente experimento:
+
+> Seleccionar una persona al azar del estudio "Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria" y observar su nivel educativo (`educacion`).
+
+##### Eventos atómicos
+
+Esta variable cuenta con los siguientes eventos atómicos:
+
+1. **Primaria:** Seleccionar un cliente al azar del estudio cuyo nivel educativo educación primaria.
+2. **Secundaria:** Seleccionar un cliente al azar del estudio cuyo nivel educativo sea secundaria.
+3. **Terciario**: Seleccionar un cliente al azar del estudio cuyo nivel educativo sea terciario.
+
+##### Probabilidades
+
+La tabla de frecuencias de `educacion` es la siguiente:
+
+```{r}
+#| echo: false
+#| label: tbl-educacion
+#| tbl-cap: Tabla de frecuencias de la variable educación
+
+educacion <- df$educacion
+kable(table(educacion))
+```
+
+En total, `educacion` tiene un tamaño efectivo de `r length(df$educacion)`. Por lo tanto, las probabilidades empíricas de cada evento atómico mencionado anteriormente son las siguientes:
+
+$$
+\begin{align}
+& P(\text{primaria}) = \frac{331}{2239} \approx 0.14 \\
+& P(\text{secundaria}) = \frac{1247}{2239} \approx 0.56 \\
+& P(\text{terciario}) = \frac{661}{2239} \approx 0.3
+.\end{align}
+$$
+
+Podemos comprobar que estas probabilidades son válidas, ya que su suma es $1$:
+
+$$
+P(\text{primaria}) + P(\text{secundaria}) + P(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1
+.$$
+
+#### Variable 2
+
+La segunda variable aleatoria que analizaremos será el **número de contactos durante la última campaña** (bajo una clasificación categórica de `campana`). El análisis para esta variable es de interés porque podría revelar patrones de comportamiento en los clientes para entender cuántos contactos (y, por lo tanto, cuánto esfuerzo) son necesarios para obtener una respuesta del clienta.
+
+Esta variable corresponde al siguiente experimento:
+
+> Seleccionar una persona al azar del estudio "Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria" y observar el número de contactos realizados a dicho cliente durante la última campaña.
+
+|       Valores        |      Categoría      |
+| :------------------: | :-----------------: |
+|         $1$          |     1 contacto      |
+|         $2$          |     2 contactos     |
+|         $3$          |     3 contactos     |
+|         $4$          |     4 contactos     |
+|  $5, 6, \ldots, 10$  | De 5 a 10 contactos |
+| $10, 11, 12, \ldots$ | Más de 10 contactos |
+
+Por lo tanto, el espacio muestral de esta variable es
+
+$$
+\begin{align}
+\Omega = \{ & \text{1 contacto}, \\
+            & \text{2 contactos}, \\
+            & \text{3 contactos}, \\
+            & \text{4 contactos}, \\
+            & \text{De 5 a 10 contactos}, \\
+            & \text{Más de 10 contactos} \}
+.\end{align}
+$$
+
+##### Eventos atómicos
+
+Esta variable cuenta con los siguientes eventos atómicos:
+
+1. **1 contacto:** Seleccionar un cliente al azar del estudio al que se haya contactado una vez durante la última campaña.
+2. **2 contactos:** Seleccionar un cliente al azar del estudio al que se haya contactado dos veces durante la última campaña.
+3. **3 contactos:** Seleccionar un cliente al azar del estudio al que se haya contactado tres veces durante la última campaña.
+4. **4 contactos:** Seleccionar un cliente al azar del estudio al que se haya contactado cuatro veces durante la última campaña.
+5. **De 5 a 10 contactos:** Seleccionar un cliente al azar del estudio al que se haya contactado de 5 a 10 veces durante la última campaña.
+6. **Más de 10 contactos:** Seleccionar un cliente al azar del estudio al que se haya contactado más de 10 veces durante la última campaña.
+
+##### Probabilidades
+
+La tabla de frecuencias de esta clasificación de `campana` es la siguiente:
+
+```{r}
+#| echo: false
+#| label: tbl-campana-categoric
+#| tbl-cap: Tabla de frecuencias del número de contactos durante la última campaña
+
+campana <- sapply(df$campana, function(x) {
+  if (x < 1) {
+    return(NA)
+  } else if (x == 1) {
+    return("1 contacto")
+  } else if (x < 5) {
+    return(paste(c(x, "contactos"), collapse = " "))
+  } else if (x <= 10) {
+    return("De 5 a 10 contactos")
+  } else {
+    return("Más de 10 contactos")
+  }
+})
+kable(table(campana))
+```
+
+En total, `campana` tiene un tamaño efectivo de `r length(df$campana)`. Por lo tanto, las probabilidades empíricas de cada evento atómico mencionado anteriormente son las siguientes:
+
+$$
+\begin{align}
+& P(\text{1 contacto}) = \frac{869}{2239} \approx 0.39 \\
+& P(\text{2 contactos}) = \frac{612}{2239} \approx 0.27 \\
+& P(\text{3 contactos}) = \frac{263}{2239} \approx 0.12 \\
+& P(\text{4 contactos}) = \frac{170}{2239} \approx 0.08 \\
+& P(\text{De 5 a 10 contactos}) = \frac{258}{2239} \approx 0.12 \\
+& P(\text{Más de 10 contactos}) = \frac{67}{2239} \approx 0.03
+.\end{align}
+$$
+
+Podemos comprobar que estas probabilidades son válidas, ya que su suma es $1$:
+
+$$
+\begin{align*}
+P(\text{1 contacto}) + \ldots + P(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1
+\end{align*}
+.$$
+
+### Probabilidad condicional
+
+Para este análisis condicional escogemos las variables **estado civil** (`estciv`) y **adquisición de cuenta de ahorro** (`adq_ahorro`). Estas variables tienen los siguientes espacios muestrales:
+
+- **Estado civil**: $\Omega = \{ \text{single}, \text{married}, \text{divorced} \}$.
+- **Adquisición de cuenta de ahorro**: $\Omega = \{ 0, 1 \}$ (donde $0$ corresponde a "no adquirir la cuenta" y $1$ corresponde a "sí adquirir la cuenta").
+
+La tabla de contingencia entre estas dos variables se muestra a continuación:
+
+```{r}
+#| echo: false
+#| tbl-cap: Tabla de contingencia de estado civil con adquisición de cuenta de ahorro
+#| label: tbl-esticv-adq
+
+tab <- addmargins(table(df$estciv, df$adq_ahorro))
+kable(tab)
+```
+
+Los eventos que consideraremos son los siguientes:
+
+1. **Evento 1** ($E_1$): Seleccionar un cliente al azar del estudio cuyo estado civil sea "married" (casado).
+2. **Evento 2** ($E_2$): Seleccionar un cliente al azar del estudio que haya adquirido la cuenta de ahorro.
+
+#### Análisis de dependencia
+
+A partir de la @tbl-esticv-adq obtenemos directamente las siguientes probabilidades:
+
+$$
+P(E_1) = \frac{1396}{2239}, \quad P(E_2) = \frac{1872}{2239}, \quad P(E_1 \cap E_2) = \frac{1157}{2239}
+.$$
+
+Con esto, podemos evaluar las diferentes condiciones para determinar la independencia de $E_1$ y $E_2$.
+
+**Condición 1:** $P(A \cap B) = P(A) \cdot P(B)$
+
+$$
+P(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = P(E_1) \cdot P(E_2)
+$$
+
+**Condición 2:** $P(A | B) = P(A)$
+
+$$
+P(E_1 | E_2) = \frac{P(E_1 \cap E_2)}{P(E_2)} = \frac{\frac{1157}{2239}}{\frac{1872}{2239}} = \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = P(E_1)
+.$$
+
+**Ley de Bayes:**
+
+$$
+P(E_2 | E_1) = \frac{P(E_1 | E_2) \cdot P(E_2)}{P(E_1 | E_2) \cdot P(E_2) + P(E_1 | E_2^c) \cdot P(E_2^c)} = \frac{\frac{1157}{1872} \cdot \frac{1872}{2239}}{\frac{1157}{1872} \cdot \frac{1872}{2239} + \frac{239}{367} \cdot \frac{367}{2239}} = \frac{1157}{1396}
+$$
+
+Se puede concluir de estas condiciones que $E_1$ y $E_2$, hablando estrictamente, son **dependientes** ya que $P(A \cap B) \neq P(E_1) \cdot P(E_2)$ y $P(E_1 | E_2) \neq P(E_1)$. Sin embargo, cabe destacar que, aunque diferentes estas probabilidades, son extremadamente similares (e incluso iguales si se las redondea a los dos decimales).
+
+Esto se puede interpretar como que la observación del estado civil de un encuestado y la observación de si adquirió la cuenta de ahorro, aunque sean eventos dependientes, se acercan mucho a ser independientes. Esto tiene sentido en relación a la @fig-estciv-adq, donde se observa que las proporciones de estado civil entre los clientes que adquirieron la cuenta y los que no son parecidas.
 
 ## Conclusiones
 
