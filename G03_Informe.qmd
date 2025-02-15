@@ -855,6 +855,12 @@ $$
 P(E_1 | E_2) = \frac{P(E_1 \cap E_2)}{P(E_2)} = \frac{\frac{1157}{2239}}{\frac{1872}{2239}} = \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = P(E_1)
 .$$
 
+**Condición 3:** $P(B | A) = P(B)$
+
+$$
+P(E_2 | E_1) = \frac{P(E_2 \cap E_1)}{P(E_1)} = \frac{\frac{1157}{2239}}{\frac{1396}{2239}} = \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = P(E_2)
+.$$
+
 **Ley de Bayes:**
 
 $$
