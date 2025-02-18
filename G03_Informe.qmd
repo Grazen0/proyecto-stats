@@ -731,14 +731,14 @@ Esta variable corresponde al siguiente experimento:
 
 > Seleccionar una persona al azar del estudio "Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria" y observar el número de contactos realizados a dicho cliente durante la última campaña.
 
-|       Valores        |      Categoría      |
-| :------------------: | :-----------------: |
-|         $1$          |     1 contacto      |
-|         $2$          |     2 contactos     |
-|         $3$          |     3 contactos     |
-|         $4$          |     4 contactos     |
-|  $5, 6, \ldots, 10$  | De 5 a 10 contactos |
-| $10, 11, 12, \ldots$ | Más de 10 contactos |
+|      Valores       |      Categoría      |
+| :----------------: | :-----------------: |
+|        $1$         |     1 contacto      |
+|        $2$         |     2 contactos     |
+|        $3$         |     3 contactos     |
+|        $4$         |     4 contactos     |
+| $5, 6, \ldots, 10$ | De 5 a 10 contactos |
+|  $11, 12, \ldots$  | Más de 10 contactos |
 
 Por lo tanto, el espacio muestral de esta variable es
 
@@ -870,6 +870,35 @@ $$
 Se puede concluir de estas condiciones que $E_1$ y $E_2$, hablando estrictamente, son **dependientes** ya que $P(A \cap B) \neq P(E_1) \cdot P(E_2)$ y $P(E_1 | E_2) \neq P(E_1)$. Sin embargo, cabe destacar que, aunque diferentes estas probabilidades, son extremadamente similares (e incluso iguales si se las redondea a los dos decimales).
 
 Esto se puede interpretar como que la observación del estado civil de un encuestado y la observación de si adquirió la cuenta de ahorro, aunque sean eventos dependientes, se acercan mucho a ser independientes. Esto tiene sentido en relación a la @fig-estciv-adq, donde se observa que las proporciones de estado civil entre los clientes que adquirieron la cuenta y los que no son parecidas.
+
+## Variables aleatorias
+
+### Variable discreta 1
+
+edad mayor a 36
+
+```{r}
+n <- length(df$edad)
+p <- sum(df$edad > 36) / n
+
+plot(
+  0:n,
+  dbinom(0:n, n, p),
+  title = "",
+  type = "h",
+  xlab = "Número esperado de encuestados mayores de 36 años (k)",
+  ylab = "P(X = k)",
+  lwd = 3
+)
+```
+
+### Variable discreta 2
+
+### Variable continua 1
+
+balance
+
+### Variable continua 2
 
 ## Conclusiones
 
