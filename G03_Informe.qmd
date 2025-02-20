@@ -939,15 +939,14 @@ d_radius <- 3 * sqrt(d_var)
 start <- round(d_mean - d_radius)
 end <- round(d_mean + d_radius)
 
-plot(
-  start:end,
+barplot(
   dbinom(start:end, n, p),
+  names.arg = start:end,
   main = "Distribución de probabilidad de X1 (parte central)",
-  type = "h",
   xlab = "Valor esperado para X1",
   ylab = "P(X1 = k)",
-  lwd = 3,
-  col = "hotpink"
+  col = "hotpink",
+  space = 0
 )
 ```
 
@@ -1057,15 +1056,14 @@ d_radius <- 3 * sqrt(d_var)
 start <- round(d_mean - d_radius)
 end <- round(d_mean + d_radius)
 
-plot(
-  start:end,
+barplot(
   dhyper(start:end, k, N - k, n),
+  names.arg = start:end,
   main = "Distribución de probabilidad de X2 (parte central)",
-  type = "h",
   xlab = "Valor esperado para X2",
   ylab = "P(X2 = k)",
-  lwd = 8,
-  col = "hotpink"
+  col = "hotpink",
+  space = 0
 )
 ```
 
