@@ -875,28 +875,303 @@ Esto se puede interpretar como que la observación del estado civil de un encues
 
 ### Variable discreta 1
 
-edad mayor a 36
+Un caso de ejemplo para esta variable es el siguiente:
+
+> Se propone un siguiente estudio donde se reutilizan los datos de los clientes de este estudio. En particular, se seleccionan en dicho estudio a las personas que hayan sido contactadas durante la presente campaña no más de 2 veces. En esta situación, ¿cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que cumplan con esta característica?
+
+En este contexto, definimos la siguiente variable aleatoria discreta:
+
+> $X_1$: Número de personas del conjunto de `r nrow(df)` que han sido contactadas a lo mucho 2 veces durante la presente campaña.
+
+Esta variable sigue el modelo binomial
+
+$$
+X_1 \sim B(n, p)
+,$$
+
+donde:
+
+- $n = `r nrow(df)`$ es la cantidad de personas en el estudio.
+- $p = P(\text{campana} \leq 2)$ es la probabilidad de que una persona del estudio escogida al azar hay sido contactada no más de 2 veces durante la presente campaña.
+
+#### Gráficos y propiedades
+
+A partir de la definición de $X$, se deducen las siguientes probabilidades:
+
+- $P(X_1 = 0)$: Probabilidad de que ningún cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
+- $P(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
+- ...
+- $P(X_1 = `r nrow(df)`)$: Probabilidad de que todos los clientes del conjunto de `r nrow(df)` del estudio hayan sido contactados a lo mucho 2 veces en la presente campaña.
+
+La gráfica de la distribución es la siguiente:
 
 ```{r}
-n <- length(df$edad)
-p <- sum(df$edad > 36) / n
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_1$
+#| label: fig-distribution-x1
+
+n <- nrow(df)
+p <- sum(df$campana <= 2) / n
 
 plot(
   0:n,
   dbinom(0:n, n, p),
-  title = "",
+  main = "Distribución de probabilidad de X1",
   type = "h",
-  xlab = "Número esperado de encuestados mayores de 36 años (k)",
-  ylab = "P(X = k)",
-  lwd = 3
+  xlab = "Valor esperado para X1",
+  ylab = "P(X1 = k)",
+  lwd = 3,
+  col = "hotpink"
 )
 ```
 
+No obstante, la forma de la distribución se puede apreciar mejor si se grafica la parte central:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_1$ (parte central)
+#| label: fig-distribution-x1-zoomed
+
+d_mean <- n * p
+d_var <- n * p * (1 - p)
+d_radius <- 3 * sqrt(d_var)
+
+start <- round(d_mean - d_radius)
+end <- round(d_mean + d_radius)
+
+plot(
+  start:end,
+  dbinom(start:end, n, p),
+  main = "Distribución de probabilidad de X1 (parte central)",
+  type = "h",
+  xlab = "Valor esperado para X1",
+  ylab = "P(X1 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+Algunas propiedades de esta distribución teórica son:
+
+- $\operatorname{E}(X_1) = `r r(d_mean)`$ (valor esperado).
+- $\operatorname{V}(X_1) = `r r(d_var)`$ (varianza).
+- $\operatorname{SD}(X_1) = `r r(sqrt(d_var))`$ (desviación estándar).
+- $\operatorname{CV}(X_1) = `r r(sqrt(d_var) / d_mean)`$ (coeficiente de variación).
+
+#### Aplicaciones
+
+La pregunta
+
+> ¿Cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que hayan sido contactadas a lo mucho 2 veces durante la presente campaña?
+
+se puede responder mediante la probabilidad
+
+$$
+P(X_1 = 1500) = `r r(dbinom(1500, n, p))`
+.$$
+
+En otras palabras, existe un $1\%$ de probabilidad de seleccionar exactamente 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña.
+
+Esta probabilidad es un valor muy bajo, y esto tiene sentido. Aunque 1500 está relativamente cerca al valor esperado de $X_1$ ($`r r(d_mean)`$), es necesario tomar en cuenta que el tamaño de la muestra ($`r n`$) es amplio, por lo que la probabilidad de que el número de clientes seleccionados con una propiedad deseada sea una cantidad exacta siempre será baja, sin importar dicha cantidad deseada.
+
+En este sentido, una pregunta más interesante podría ser
+
+> ¿Cuál es la probabilidad de que de 1300 a 1500 personas del total ($n = `r n`$) que hayan sido contactadas a lo mucho 2 veces durante la presente campaña?
+
+Esta pregunta se puede responder mediante la probabilidad
+
+$$
+P(1300 \leq X_1 \leq 1500) = P(X_1 \leq 1500) - P(X_1 \leq 1299) = `r r(pbinom(1500, n, p) - pbinom(1299, n, p))`
+.$$
+
+En otras palabras, existe un $81\%$ de probabilidad de seleccionar entre 1300 y 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña. Tiene sentido que esta probabilidad sea tan alta, puesto que el rango entre $1300$ y $1500$ contiene a la media.
+
 ### Variable discreta 2
+
+Supongamos ahora el siguiente caso de ejemplo:
+
+> Luego del estudio actual, se busca realizar un estudio subsiguiente. Sin embargo, se quiere analizar a un subconjunto de solamente $1000$ personas del estudio actual. ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, al menos $45$ tengan edad mayor o igual a 60 años?
+
+En este contexto, definimos la siguiente variable aleatoria discreta:
+
+> $X_2$: Número de personas del subconjunto de $1000$ seleccionado del total de `r nrow(df)` que tienen al menos 60 años.
+
+Esta variable sigue el modelo hipergeométrico
+
+$$
+X_2 \sim H(N, n, k)
+,$$
+
+donde:
+
+```{r}
+#| echo: false
+N <- nrow(df)
+n <- 1000
+k <- sum(df$edad >= 60)
+```
+
+- $N = `r N`$ es la cantidad de personas en el estudio actual.
+- $n = `r n`$ es el tamaño del subconjunto escogido al azar.
+- $k = `r k`$ es la cantidad de personas del estudio actual con al menos 60 años.
+
+#### Gráficos y propiedades
+
+A partir de la definición de $X$, se deducen las siguientes probabilidades:
+
+- $P(X_1 = 0)$: Probabilidad de que ningún cliente del subconjunto de $1000$ tenga al menos 60 años.
+- $P(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del subconjunto de $1000$ tenga al menos 60 años.
+- ...
+- $P(X_1 = `r n`)$: Probabilidad de que todos los clientes del subconjunto de $1000$ tengan al menos 60 años.
+
+La gráfica de la distribución es la siguiente:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_2$
+#| label: fig-distribution-x2
+
+plot(
+  0:n,
+  dhyper(0:n, k, N - k, n),
+  main = "Distribución de probabilidad de X2",
+  type = "h",
+  xlab = "Valor esperado para X2",
+  ylab = "P(X2 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+La forma de la distribución se puede apreciar mejor si se grafica la parte central:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_2$ (parte central)
+#| label: fig-distribution-x2-zoomed
+
+d_mean <- (n * k) / N
+d_var <- (N - n) / (N - 1) * n * (k / N) * (1 - k / N)
+d_radius <- 3 * sqrt(d_var)
+
+start <- round(d_mean - d_radius)
+end <- round(d_mean + d_radius)
+
+plot(
+  start:end,
+  dhyper(start:end, k, N - k, n),
+  main = "Distribución de probabilidad de X2 (parte central)",
+  type = "h",
+  xlab = "Valor esperado para X2",
+  ylab = "P(X2 = k)",
+  lwd = 8,
+  col = "hotpink"
+)
+```
+
+Algunas propiedades de esta distribución teórica son:
+
+- $\operatorname{E}(X_2) = `r r(d_mean)`$ (valor esperado).
+- $\operatorname{V}(X_2) = `r r(d_var)`$ (varianza).
+- $\operatorname{SD}(X_2) = `r r(sqrt(d_var))`$ (desviación estándar).
+- $\operatorname{CV}(X_2) = `r r(sqrt(d_var) / d_mean)`$ (coeficiente de variación).
+
+#### Aplicaciones
+
+La pregunta
+
+> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, al menos $45$ tengan edad mayor o igual a 60 años?
+
+se puede responder mediante la probabilidad
+
+$$
+P(X_2 \geq 45) = `r r(phyper(44, k, N - k, n, lower.tail = FALSE))`
+.$$
+
+En otras palabras, existe un $23\%$ de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, al menos $45$ personas tengan 60 años o más.
+
+Una pregunta que usa la función de probabilidad en lugar de la acumulada es la siguiente:
+
+> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, exactamente $45$ tengan edad mayor o igual a 60 años?
+
+Esta pregunta se puede responder mediante la probabilidad
+
+$$
+P(X_2 = 45) = `r r(dhyper(45, k, N - k, n))`
+.$$
+
+En otras palabras, existe un $6\%$ de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, exactamente $45$ personas tengan 60 años o más.
 
 ### Variable continua 1
 
-balance
+La variable continua que analizaremos será la siguiente:
+
+> $X_3$: Balance de una persona seleccionada al azar de la muestra de $`r nrow(df)`$ del estudio.
+
+De esta manera, definimos la siguiente probabilidad:
+
+> $P(a \leq X_3 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar del estudio se encuentre entre $a$ y $b$ euros.
+
+:::{.callout-note}
+Quiero preguntarle al profe si se puede hacer eso de ignorar algunos datos atipicos para q salga mejor el modelo.
+:::
+
+Vamos a mostrar que $X_3$, en general, sigue el modelo de distribución **exponencial**. A continuación se muestra la distribución empírica de $X_3$ en un radio de $3\operatorname{SD}(X_3)$ alrededor de $\operatorname{E}(X_3)$, junto a una curva de distribución exponencial generada con $\beta = \operatorname{E}(X_3)$:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_3$
+#| label: fig-distribution-x3
+
+df <- df %>% filter(balance < 3000)
+
+b_mean <- mean(df$balance)
+b_var <- var(df$balance)
+b_sd <- sd(df$balance)
+
+start <- min(df$balance)
+end <- max(df$balance)
+
+df_filt <- df %>% filter(balance >= start & balance <= end)
+x <- seq(min(df_filt$balance), max(df_filt$balance), length = 40)
+
+hist(
+  df_filt$balance,
+  probability = TRUE,
+  main = "Distribución de probabilidad de balance de con curva exponencial",
+  xlab = "Balance (x)",
+  ylab = "P(X3 = x)",
+  col = "hotpink",
+  breaks = 30
+)
+lines(x, dexp(x, 1 / b_mean), col = "red", lwd = 2)
+```
+
+```{r}
+sum(df$balance < 3000) / nrow(df)
+b_mean
+b_sd
+```
+
+#### Aplicaciones
+
+Supongamos que $X_3$ sigue la distribución
+
+$$
+X_3 \sim \operatorname{Exp}(\beta)
+,$$
+
+donde $\beta = \operatorname{E}(X_3) = `r r(b_mean)`$ es la media empírica de $X_3$.
+
+Ahora, supongamos que queremos saber lo siguiente:
+
+> ¿Cuál es la probabilidad de que una persona seleccionada al azar del estudio tenga un balance mayor o igual a $2000$ euros?
+
+$$
+P(X_3 \ge 2000) = `r r(pexp(2000, 1 / b_mean, lower.tail = FALSE))`
+.$$
+
+En otras palabras, una persona seleccionada al azar del estudio tiene solo un $4\%$ de probabilidad de tener un balance de al menos 2000 euros. Esto es un indicador de que la gran mayoría de clientes de la muestra no tienen balances más allá de los 2000 euros. A su vez, esto puede indicar que la muestra de clientes con balance mayor o igual a 2000 euros no es muy representativa, por lo que posibles inferencias sobre este grupo podrían estar sesgadas por falta de información.
 
 ### Variable continua 2
 
