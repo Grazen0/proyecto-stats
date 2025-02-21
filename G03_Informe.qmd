@@ -1100,26 +1100,28 @@ P(X_2 = 45) = `r r(dhyper(45, k, N - k, n))`
 
 En otras palabras, existe un $6\%$ de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, exactamente $45$ personas tengan 60 años o más.
 
-### Variable continua 1
+### Variable discreta 3
+
+### Variable continua
 
 La variable continua que analizaremos será la siguiente:
 
-> $X_3$: Balance de una persona seleccionada al azar de la muestra de $`r nrow(df)`$ del estudio.
+> $X_4$: Balance de una persona seleccionada al azar de la muestra de $`r nrow(df)`$ del estudio.
 
 De esta manera, definimos la siguiente probabilidad:
 
-> $P(a \leq X_3 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar del estudio se encuentre entre $a$ y $b$ euros.
+> $P(a \leq X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar del estudio se encuentre entre $a$ y $b$ euros.
 
 :::{.callout-note}
 Quiero preguntarle al profe si se puede hacer eso de ignorar algunos datos atipicos para q salga mejor el modelo.
 :::
 
-Vamos a mostrar que $X_3$, en general, sigue el modelo de distribución **exponencial**. A continuación se muestra la distribución empírica de $X_3$ en un radio de $3\operatorname{SD}(X_3)$ alrededor de $\operatorname{E}(X_3)$, junto a una curva de distribución exponencial generada con $\beta = \operatorname{E}(X_3)$:
+Vamos a mostrar que $X_4$, en general, sigue el modelo de distribución **exponencial**. A continuación se muestra la distribución empírica de $X_4$ en un radio de $3\operatorname{SD}(X_4)$ alrededor de $\operatorname{E}(X_4)$, junto a una curva de distribución exponencial generada con $\beta = \operatorname{E}(X_4)$:
 
 ```{r}
 #| echo: false
-#| fig-cap: Distribución de probabilidad de $X_3$
-#| label: fig-distribution-x3
+#| fig-cap: Distribución de probabilidad de $X_4$
+#| label: fig-distribution-x4
 
 df <- df %>% filter(balance < 3000)
 
@@ -1138,7 +1140,7 @@ hist(
   probability = TRUE,
   main = "Distribución de probabilidad de balance de con curva exponencial",
   xlab = "Balance (x)",
-  ylab = "P(X3 = x)",
+  ylab = "P(X4 = x)",
   col = "hotpink",
   breaks = 30
 )
@@ -1153,25 +1155,23 @@ b_sd
 
 #### Aplicaciones
 
-Supongamos que $X_3$ sigue la distribución
+Supongamos que $X_4$ sigue la distribución
 
 $$
-X_3 \sim \operatorname{Exp}(\beta)
+X_4 \sim \operatorname{Exp}(\beta)
 ,$$
 
-donde $\beta = \operatorname{E}(X_3) = `r r(b_mean)`$ es la media empírica de $X_3$.
+donde $\beta = \operatorname{E}(X_4) = `r r(b_mean)`$ es la media empírica de $X_4$.
 
 Ahora, supongamos que queremos saber lo siguiente:
 
 > ¿Cuál es la probabilidad de que una persona seleccionada al azar del estudio tenga un balance mayor o igual a $2000$ euros?
 
 $$
-P(X_3 \ge 2000) = `r r(pexp(2000, 1 / b_mean, lower.tail = FALSE))`
+P(X_4 \ge 2000) = `r r(pexp(2000, 1 / b_mean, lower.tail = FALSE))`
 .$$
 
 En otras palabras, una persona seleccionada al azar del estudio tiene solo un $4\%$ de probabilidad de tener un balance de al menos 2000 euros. Esto es un indicador de que la gran mayoría de clientes de la muestra no tienen balances más allá de los 2000 euros. A su vez, esto puede indicar que la muestra de clientes con balance mayor o igual a 2000 euros no es muy representativa, por lo que posibles inferencias sobre este grupo podrían estar sesgadas por falta de información.
-
-### Variable continua 2
 
 ## Conclusiones
 
