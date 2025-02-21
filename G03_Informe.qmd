@@ -574,15 +574,14 @@ boxplot(
 ```
 
 ```{r}
-#| echo: false
+#| echo: true
 #| label: fig-adq-no-contactados
 #| fig-cap: Adquisición de cuenta (clientes no contactados previamente)
 
-df_aux_2 <- df[df$pdias == -1, ]
+df_aux_2 <- df %>% filter(pdias == -1)
 pdias_table <- table(df_aux_2$adq_ahorro)
 
 colors <- c("hotpink", "lightblue3")
-pdias_table <- table(df$pdias != -1)
 labels <- paste0(r(100 * pdias_table / sum(pdias_table)), "%")
 
 pie(
@@ -591,7 +590,7 @@ pie(
   labels = labels,
   col = colors
 )
-legend("topleft", legend = c("Sí adquirió", "No adquirió"), fill = colors)
+legend("topleft", legend = c("No adquirió", "Sí adquirió"), fill = colors)
 ```
 
 ### Medidas de resumen {#sec-medidas}
@@ -883,7 +882,7 @@ En este contexto, definimos la siguiente variable aleatoria discreta:
 
 > $X_1$: Número de personas del conjunto de `r nrow(df)` que han sido contactadas a lo mucho 2 veces durante la presente campaña.
 
-Esta variable sigue el modelo binomial
+Debido a la manera en la que está definida, esta variable sigue el modelo binomial
 
 $$
 X_1 \sim B(n, p)
@@ -896,7 +895,7 @@ donde:
 
 #### Gráficos y propiedades
 
-A partir de la definición de $X$, se deducen las siguientes probabilidades:
+A partir de la definición de $X_1$, se deducen las siguientes probabilidades:
 
 - $P(X_1 = 0)$: Probabilidad de que ningún cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
 - $P(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
@@ -965,37 +964,51 @@ La pregunta
 
 se puede responder mediante la probabilidad
 
+```{r}
+#| echo: false
+ans <- dbinom(1500, n, p)
+```
+
 $$
-P(X_1 = 1500) = `r r(dbinom(1500, n, p))`
+P(X_1 = 1500) = `r r(ans)`
 .$$
 
-En otras palabras, existe un $1\%$ de probabilidad de seleccionar exactamente 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña.
+En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de seleccionar exactamente 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña.
 
 Esta probabilidad es un valor muy bajo, y esto tiene sentido. Aunque 1500 está relativamente cerca al valor esperado de $X_1$ ($`r r(d_mean)`$), es necesario tomar en cuenta que el tamaño de la muestra ($`r n`$) es amplio, por lo que la probabilidad de que el número de clientes seleccionados con una propiedad deseada sea una cantidad exacta siempre será baja, sin importar dicha cantidad deseada.
 
 En este sentido, una pregunta más interesante podría ser
 
-> ¿Cuál es la probabilidad de que de 1300 a 1500 personas del total ($n = `r n`$) que hayan sido contactadas a lo mucho 2 veces durante la presente campaña?
+> ¿Cuál es la probabilidad de que entre 1300 a 1500 personas del total de $n = `r n`$ hayan sido contactadas a lo mucho 2 veces durante la presente campaña?
 
 Esta pregunta se puede responder mediante la probabilidad
 
+```{r}
+#| echo: false
+ans <- pbinom(1500, n, p) - pbinom(1299, n, p)
+```
+
 $$
-P(1300 \leq X_1 \leq 1500) = P(X_1 \leq 1500) - P(X_1 \leq 1299) = `r r(pbinom(1500, n, p) - pbinom(1299, n, p))`
+P(1300 \leq X_1 \leq 1500) = P(X_1 \leq 1500) - P(X_1 \leq 1299) = `r r(ans)`
 .$$
 
-En otras palabras, existe un $81\%$ de probabilidad de seleccionar entre 1300 y 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña. Tiene sentido que esta probabilidad sea tan alta, puesto que el rango entre $1300$ y $1500$ contiene a la media.
+En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de seleccionar entre 1300 y 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña. Tiene sentido que esta probabilidad sea tan alta, puesto que el rango entre $1300$ y $1500$ contiene a la media.
 
 ### Variable discreta 2
 
+```{r}
+df_adq <- df %>% filter(adq_ahorro == 1)
+```
+
 Supongamos ahora el siguiente caso de ejemplo:
 
-> Luego del estudio actual, se busca realizar un estudio subsiguiente. Sin embargo, se quiere analizar a un subconjunto de solamente $1000$ personas del estudio actual. ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, al menos $45$ tengan edad mayor o igual a 60 años?
+> Luego del estudio actual, se busca realizar un estudio subsiguiente. Sin embargo, se quiere analizar a un subconjunto de solamente $1000$ personas del estudio actual, y este subconjunto se tomará de quienes hayan adquirido la cuenta de ahorro. ¿Cuál es la probabilidad de que, de esta muestra aleatoria, al menos $45$ tengan edad mayor o igual a $60$ años?
 
 En este contexto, definimos la siguiente variable aleatoria discreta:
 
-> $X_2$: Número de personas del subconjunto de $1000$ seleccionado del total de `r nrow(df)` que tienen al menos 60 años.
+> $X_2$: Número de personas del subconjunto de $1000$ seleccionado del total de $`r nrow(df_adq)`$ (quienes adquirieron la cuenta de ahorro) que tienen al menos $60$ años.
 
-Esta variable sigue el modelo hipergeométrico
+Debido a cómo está definida, esta variable sigue el modelo hipergeométrico
 
 $$
 X_2 \sim H(N, n, k)
@@ -1005,23 +1018,23 @@ donde:
 
 ```{r}
 #| echo: false
-N <- nrow(df)
+N <- nrow(df_adq)
 n <- 1000
-k <- sum(df$edad >= 60)
+k <- sum(df_adq$edad >= 60)
 ```
 
-- $N = `r N`$ es la cantidad de personas en el estudio actual.
+- $N = `r N`$ es la cantidad de personas del estudio actual que adquirieron la cuenta de ahorro.
 - $n = `r n`$ es el tamaño del subconjunto escogido al azar.
-- $k = `r k`$ es la cantidad de personas del estudio actual con al menos 60 años.
+- $k = `r k`$ es la cantidad de personas del estudio actual que adquirieron la cuenta de ahorro y tienen al menos 60 años.
 
 #### Gráficos y propiedades
 
-A partir de la definición de $X$, se deducen las siguientes probabilidades:
+A partir de la definición de $X_2$, se deducen las siguientes probabilidades:
 
-- $P(X_1 = 0)$: Probabilidad de que ningún cliente del subconjunto de $1000$ tenga al menos 60 años.
-- $P(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del subconjunto de $1000$ tenga al menos 60 años.
+- $P(X_2 = 0)$: Probabilidad de que ningún cliente del subconjunto de $`r n`$ tenga al menos 60 años.
+- $P(X_2 = 1)$: Probabilidad de que exactamente 1 cliente del subconjunto de $`r n`$ tenga al menos 60 años.
 - ...
-- $P(X_1 = `r n`)$: Probabilidad de que todos los clientes del subconjunto de $1000$ tengan al menos 60 años.
+- $P(X_2 = `r n`)$: Probabilidad de que todos los clientes del subconjunto de $`r n`$ tengan al menos 60 años.
 
 La gráfica de la distribución es la siguiente:
 
@@ -1078,80 +1091,261 @@ Algunas propiedades de esta distribución teórica son:
 
 La pregunta
 
-> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, al menos $45$ tengan edad mayor o igual a 60 años?
+> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas de quienes adquirieron la cuenta de ahorro en el estudio actual, al menos $45$ tengan edad mayor o igual a $60$ años?
 
 se puede responder mediante la probabilidad
 
+```{r}
+#| echo: false
+ans <- phyper(44, k, N - k, n, lower.tail = FALSE)
+```
+
 $$
-P(X_2 \geq 45) = `r r(phyper(44, k, N - k, n, lower.tail = FALSE))`
+P(X_2 \geq 45) = `r r(ans)`
 .$$
 
-En otras palabras, existe un $23\%$ de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, al menos $45$ personas tengan 60 años o más.
+En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, al menos $45$ personas tengan $60$ años o más.
 
 Una pregunta que usa la función de probabilidad en lugar de la acumulada es la siguiente:
 
-> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas del estudio actual, exactamente $45$ tengan edad mayor o igual a 60 años?
+> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas de quienes adquirieron la cuenta de ahorro en el estudio actual, exactamente $45$ tengan edad mayor o igual a $60$ años?
 
 Esta pregunta se puede responder mediante la probabilidad
 
+```{r}
+#| echo: false
+ans <- dhyper(45, k, N - k, n)
+```
+
 $$
-P(X_2 = 45) = `r r(dhyper(45, k, N - k, n))`
+P(X_2 = 45) = `r r(ans)`
 .$$
 
-En otras palabras, existe un $6\%$ de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, exactamente $45$ personas tengan 60 años o más.
+En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df_adq)`$ que adquirieron la cuenta, exactamente $45$ personas tengan 60 años o más.
 
 ### Variable discreta 3
+
+```{r}
+#| echo: false
+df_no_cntc <- df %>% filter(pdias == -1)
+p <- sum(df_no_cntc$adq_ahorro == 0) / nrow(df_no_cntc)
+```
+
+Supongamos la siguiente situación:
+
+> Un estudio subsiguiente quiere saber si no realizar contactos telefónicos con las personas es viable, ya que podría ahorrar recursos humanos. En este sentido, ¿cuál es la probabilidad de que tome exactamente 10 selecciones de clientes al azar de entre quienes no hayan sido contactados para hallar uno que no adquiera la cuenta de ahorro?
+
+En este contexto, definimos la siguiente variable aleatoria discreta:
+
+> $X_3$: Cantidad de selecciones aleatorias (sin repetición) del conjunto de `r nrow(df_no_cntc)` personas que no fueron contactadas (`pdias == -1`) del presente estudio hasta seleccionar una que no haya adquirido la cuenta de ahorro.
+
+Esta variable, por su definición, sigue el modelo probabilístico
+
+$$
+X_3 \sim \operatorname{Geom}(p)
+,$$
+
+donde $p = `r r(p)`$, la probabilidad de éxito, es igual a la probabilidad empírica de seleccionar al azar un cliente no contactado previamente (es decir, con `pdias == -1`) que no haya adquirido la cuenta de ahorro.
+
+#### Gráficos y propiedades
+
+A partir de la definición de $X_3$, se deducen las siguientes probabilidades:
+
+- $P(X_3 = 0)$: Probabilidad de hacer 0 selecciones de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
+- $P(X_3 = 1)$: Probabilidad de hacer una selección de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
+- $P(X_3 = 2)$: Probabilidad de hacer dos selecciones de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
+- ...
+
+La gráfica de la distribución es la siguiente:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_3$
+#| label: fig-distribution-x3
+
+lim <- 200
+
+plot(
+  0:lim,
+  dgeom(0:lim, p),
+  main = "Distribución de probabilidad de X3",
+  type = "h",
+  xlab = "Valor esperado para X3",
+  ylab = "P(X3 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+La parte central de la distribución se ve de la siguiente manera:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_3$ (parte central)
+#| label: fig-distribution-x3-zoomed
+
+d_mean <- 1 / p
+d_var <- (1 - p) / p^2
+d_radius <- 3 * sqrt(d_var)
+
+start <- max(round(d_mean - d_radius), 0)
+end <- round(d_mean + d_radius)
+
+barplot(
+  dgeom(start:end, p),
+  names.arg = start:end,
+  main = "Distribución de probabilidad de X3 (parte central)",
+  xlab = "Valor esperado para X3",
+  ylab = "P(X3 = k)",
+  col = "hotpink",
+  space = 0
+)
+```
+
+Algunas propiedades de esta distribución teórica son:
+
+- $\operatorname{E}(X_3) = `r r(d_mean)`$ (valor esperado).
+- $\operatorname{V}(X_3) = `r r(d_var)`$ (varianza).
+- $\operatorname{SD}(X_3) = `r r(sqrt(d_var))`$ (desviación estándar).
+- $\operatorname{CV}(X_3) = `r r(sqrt(d_var) / d_mean)`$ (coeficiente de variación).
+
+#### Aplicaciones
+
+La pregunta formulada al inicio,
+
+> ¿Cuál es la probabilidad de que tome exactamente 10 selecciones de clientes al azar de entre quienes no hayan sido contactados para hallar uno que no adquiera la cuenta de ahorro?
+
+se puede responder mediante la probabilidad
+
+```{r}
+#| echo: false
+ans <- dgeom(10, p)
+```
+
+$$
+P(X_3 = 10) = `r r(ans)`
+.$$
+
+Esto es, existe un `r 100 * r(ans)`% de probabilidad de que tome exactamente 10 selecciones de clientes al azar (nuevamente, de entre quienes no hayan sido contactados) para finalmente hallar uno que no adquiera la cuenta de ahorro.
+
+Otra pregunta, quizá más informativa, que se puede plantear es la siguiente:
+
+> ¿Cuál es la probabilidad de que tome más de 10 selecciones de clientes al azar de entre quienes no hayan sido contactados para hallar uno que no adquiera la cuenta de ahorro?
+
+La respuesta a esta pregunta es
+
+```{r}
+#| echo: false
+ans <- pgeom(10, p, lower.tail = FALSE)
+```
+
+$$
+P(X_3 > 10) = `r r(ans)`
+.$$
+
+Esto quiere decir que existe solo un `r 100 * r(ans)`% de probabilidad de que tome más de 10 selecciones de entre los clientes no contactados en encontrar a alguien que no adquiera la cuenta de ahorro. Aunque, en general, la probabilidad de que un cliente no contactado adquiera la cuenta es relativamente alta, esto indica que más de 10 clientes no contactados seguidos que sí adquieran la cuenta no es tan probable.
 
 ### Variable continua
 
 La variable continua que analizaremos será la siguiente:
 
-> $X_4$: Balance de una persona seleccionada al azar de la muestra de $`r nrow(df)`$ del estudio.
+> $X_4$: Balance de una persona seleccionada al azar de las $`r nrow(df_adq)`$ que adquirieron la cuenta de ahorro en el estudio.
 
-De esta manera, definimos la siguiente probabilidad:
+De esta manera, definimos las siguiente probabilidad:
 
-> $P(a \leq X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar del estudio se encuentre entre $a$ y $b$ euros.
+- $P(X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro sea menor o igual a $b$.
+- $P(X_4 \geq a)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro sea mayor o igual a $a$.
+- $P(a \leq X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro se encuentre entre $a$ y $b$ euros.
 
-:::{.callout-note}
-Quiero preguntarle al profe si se puede hacer eso de ignorar algunos datos atipicos para q salga mejor el modelo.
-:::
-
-Vamos a mostrar que $X_4$, en general, sigue el modelo de distribución **exponencial**. A continuación se muestra la distribución empírica de $X_4$ en un radio de $3\operatorname{SD}(X_4)$ alrededor de $\operatorname{E}(X_4)$, junto a una curva de distribución exponencial generada con $\beta = \operatorname{E}(X_4)$:
+En general, $X_4$ no sigue alguna distribución de probabilidad conocida:
 
 ```{r}
 #| echo: false
 #| fig-cap: Distribución de probabilidad de $X_4$
 #| label: fig-distribution-x4
 
-df <- df %>% filter(balance < 3000)
-
-b_mean <- mean(df$balance)
-b_var <- var(df$balance)
-b_sd <- sd(df$balance)
-
-start <- min(df$balance)
-end <- max(df$balance)
-
-df_filt <- df %>% filter(balance >= start & balance <= end)
-x <- seq(min(df_filt$balance), max(df_filt$balance), length = 40)
+x <- seq(min(df_adq$balance), max(df_adq$balance), length = 100)
 
 hist(
-  df_filt$balance,
+  df_adq$balance,
   probability = TRUE,
-  main = "Distribución de probabilidad de balance de con curva exponencial",
+  breaks = 40,
+  main = "Distribución de probabilidad de X4",
+  xlab = "Balance (x)",
+  ylab = "P(X4 = x)",
+  col = "hotpink"
+)
+lines(x, dexp(x, 1 / mean(df_adq$balance)), col = "red", lwd = 2)
+```
+
+Aunque la @fig-distribution-x4 muestra una apariencia posiblemente exponencial, se puede comprobar numéricamente que la condición $\operatorname{E}(X_4) = \operatorname{SD}(X_4)$, de una distribución exponencial, *no se cumple* por un gran margen:
+
+```{r}
+mean(df_adq$balance)
+sd(df_adq$balance)
+```
+
+```{r}
+#| echo: false
+max_bal <- 6000
+```
+
+Sin embargo, un modelo exponencial se ajusta algo mejor si nos enfocamos en los datos por debajo de cierto valor. Se muestra a continuación la distribución de probabilidad únicamente para los balances por debajo de **`r max_bal` euros** y una curva de distribución exponencial generada con tasa $\beta$ igual a la media de estos balances filtrados:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_4$ (balances < 6000)
+#| label: fig-distribution-x4-zoomed
+
+df_adq_filt <- df_adq %>% filter(balance < max_bal)
+lambda <- 1 / mean(df_adq_filt$balance)
+
+x <- seq(min(df_adq_filt$balance), max(df_adq_filt$balance), length = 100)
+
+hist(
+  df_adq_filt$balance,
+  probability = TRUE,
+  main = paste("Distribución de probabilidad de X4 (balances < ", max_bal, ")", sep = ""),
   xlab = "Balance (x)",
   ylab = "P(X4 = x)",
   col = "hotpink",
   breaks = 30
 )
-lines(x, dexp(x, 1 / b_mean), col = "red", lwd = 2)
+lines(x, dexp(x, lambda), col = "red", lwd = 2)
 ```
 
+Cabe destacar que este cambio, de todas formas, preserva el `r r(100 * length(df_adq_filt$balance) / length(df_adq_filt$balance))`% de los balances originales.
+
+Considerando a estos balances, su media y desviación estándar son, respectivamente, los siguientes:
+
 ```{r}
-sum(df$balance < 3000) / nrow(df)
-b_mean
-b_sd
+mean(df_adq_filt$balance)
+sd(df_adq_filt$balance)
 ```
+
+Siguen sin ser exactamente iguales, pero ahora el error relativo es de `r r(100 * abs(mean(df_adq_filt$balance) - sd(df_adq_filt$balance)) / sd(df_adq_filt$balance))`% y la curva exponencial encaja algo mejor en la gráfica. El ajuste sigue sin estar muy cerca de ser exacto, pero está lo suficientemente cerca como para usarlo en cálculos que no requieran mayor precisión.
+
+Solo por completitud, podemos comprobar que la curva de este modelo alternativo también encaja decentemente para los datos completos del balance:
+
+```{r}
+#| echo: false
+#| fig-cap: Distribución de probabilidad de $X_4$ (nuevo modelo)
+#| label: fig-distribution-x4-better
+
+x <- seq(min(df_adq$balance), max(df_adq$balance), length = 100)
+hist(
+  df_adq$balance,
+  probability = TRUE,
+  main = paste("Distribución de probabilidad de X4 (nuevo modelo)"),
+  xlab = "Balance (x)",
+  ylab = "P(X4 = x)",
+  col = "hotpink",
+  breaks = 30
+)
+lines(x, dexp(x, lambda), col = "red", lwd = 2)
+```
+
+No obstante, es necesario siempre tener en cuenta que este modelo, en general, encaja mejor en los balances menores a $`r max_bal`$ euros.
 
 #### Aplicaciones
 
@@ -1161,17 +1355,36 @@ $$
 X_4 \sim \operatorname{Exp}(\beta)
 ,$$
 
-donde $\beta = \operatorname{E}(X_4) = `r r(b_mean)`$ es la media empírica de $X_4$.
+donde $\beta$, la tasa, es igual a la media empírica de los balances menores a $`r max_bal`$ euros.
 
 Ahora, supongamos que queremos saber lo siguiente:
 
-> ¿Cuál es la probabilidad de que una persona seleccionada al azar del estudio tenga un balance mayor o igual a $2000$ euros?
+> ¿Cuál es la probabilidad de que una persona seleccionada al azar de entre las que adquirieron la cuenta de ahorro tenga un balance mayor o igual a $2000$ euros?
+
+Esta consulta se puede calcular por medio de la probabilidad
 
 $$
-P(X_4 \ge 2000) = `r r(pexp(2000, 1 / b_mean, lower.tail = FALSE))`
+P(X_4 \ge 2000) = `r r(pexp(2000, lambda, lower.tail = FALSE))`
 .$$
 
 En otras palabras, una persona seleccionada al azar del estudio tiene solo un $4\%$ de probabilidad de tener un balance de al menos 2000 euros. Esto es un indicador de que la gran mayoría de clientes de la muestra no tienen balances más allá de los 2000 euros. A su vez, esto puede indicar que la muestra de clientes con balance mayor o igual a 2000 euros no es muy representativa, por lo que posibles inferencias sobre este grupo podrían estar sesgadas por falta de información.
+
+Otra posible consulta podría ser la siguiente:
+
+> ¿Cuál es la probabilidad de que una persona seleccionada al azar de entre las que adquirieron la cuenta de ahorro tenga un balance entre $500$ y $1000$ euros?
+
+Esta pregunta corresponde a la probabilidad
+
+```{r}
+#| echo: false
+ans <- pexp(1000, lambda) - pexp(500, lambda)
+```
+
+$$
+P(500 \leq X_4 \leq 1000) = P(X_4 \leq 1000) - P(X_4 < 500) = `r r(ans)`
+.$$
+
+Es decir, existe un $`r 100 * r(ans)`\%$ de probabilidad de que una persona seleccionada al azar de entre quienes adquirieron la cuenta de ahorro tenga un balance entre $1000$ y $500$ euros. Considerando el rango de los balances, es una probabilidad relativamente elevada. Esto puede ser un indicador de que, al menos entre quienes adquirieron la cuenta, es relativamente frecuente tener un balance en este rango.
 
 ## Conclusiones
 
