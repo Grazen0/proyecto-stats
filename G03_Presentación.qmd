@@ -1,0 +1,563 @@
+---
+format:
+  revealjs:
+    slide-number: true
+    controls: true
+    progress: false
+    center: true
+    width: 1920
+    height: 1080
+    embed-resources: true
+    toc: false
+    navigation-mode: linear
+    institute: UTEC
+---
+
+```{r}
+#| echo: false
+#| output: false
+library_checked <- function(lib_name) {
+  if (!require(lib_name, character.only = TRUE)) {
+    install.packages(lib_name)
+  }
+
+  require(lib_name, character.only = TRUE)
+}
+
+library_checked("dplyr")
+library_checked("tidyr")
+library_checked("readr")
+library_checked("modeest")
+library_checked("ggplot2")
+library_checked("knitr")
+
+df <- read_csv("AdquisicionAhorro.csv")
+
+r <- function(x) {
+  return(round(x, digits = 2))
+}
+
+cv <- function(x, na.rm = FALSE) {
+  return(sd(x, na.rm = na.rm) / mean(x, na.rm = na.rm))
+}
+
+if ("Adq_Ahorro" %in% colnames(df)) {
+  df <- df %>% rename(adq_ahorro = Adq_Ahorro)
+}
+
+df <- df %>% select(edad, estciv, educacion, mora, balance, campana, pdias, adq_ahorro)
+
+df <- df %>% mutate(balance = as.numeric(balance))
+
+df <- df %>% mutate(
+  estciv = replace_na(estciv, mfv(estciv)),
+  educacion = replace(educacion, is.na(educacion) | educacion == "desconocido", mfv(educacion)),
+  mora = replace_na(mora, mfv(mora))
+)
+
+df <- df %>% mutate(
+  edad = replace_na(edad, round(mean(edad, na.rm = TRUE))),
+  balance = replace_na(balance, median(balance, na.rm = TRUE)),
+  campana = replace_na(campana, round(median(campana, na.rm = TRUE)))
+)
+
+df <- df %>% filter(!is.na(pdias))
+```
+
+## Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria.
+
+**Profesor:** Antonio Alejandro Gamero Paredes
+
+**Integrantes:**
+
+1. José Daniel Grayson Tejada (líder)
+2. Fali Ferdinand Araoz Arana
+3. Leisy Valeska Bendezu Choque
+4. Daniela Landavery Vergaray
+
+## Objetivo general
+
+Conocer los factores que influyen en la aceptación de una cuenta de ahorro vía telefónica para los clientes de una entidad bancaria a través de la identificación de patrones usando el análisis estadístico.
+
+### Objetivos específicos
+
+1. Analizar la relación entre el estado financiero de un cliente (balance, mora) y su predisposición a aceptar una cuenta de ahorro
+2. Identificar el impacto de las características demográficas (edad, estciv) en la decisión de adquirir una cuenta de ahorro.
+3. Identificar un posible patrón en el nivel de educación (educacion) de las personas que aceptan abrir una cuenta de ahorro.
+4. Evaluar el efecto de las variables relacionadas con la interacción con el cliente (campana) en la decisión de adquirir una cuenta de ahorro.
+5. Identificar el tiempo posterior promedio de la última llamada a los clientes (pdias) antes de aceptar abrir una cuenta de ahorro.
+
+## Variables
+
+| Variable                            |              Tipo               | Restricciones                                       |
+| :---------------------------------- | :-----------------------------: | :-------------------------------------------------- |
+| **Edad**                            |      cuantitativa discreta      | Mayor o igual a $18$.                               |
+| **Estado civil**                    |       cualitativa nominal       | Uno de `"married`, `"single"`, `"divorced"`.        |
+| **Educación**                       |       cualitativa ordinal       | Uno de `"primaria"`, `"secundaria"`, `"terciario"`. |
+| **Mora**                            | cualitativa nominal, dicotómica | Uno de `"si"`, `"no"`.                              |
+| **Balance**                         |      cuantitativa continua      | Mayor o igual a $0$.                                |
+| **Campaña**                         |      cuantitativa discreta      | Mayor o igual a $0$.                                |
+| **PDias**                           |      cuantitativa discreta      | Mayor o igual a $0$ o igual a $-1$.                 |
+| **Adquisición de cuenta de ahorro** | cualitativa nominal, dicotómica | Igual a $0$ o a $1$.                                |
+
+## Descriptores
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+data <- table(df$educacion, df$adq_ahorro)
+mosaicplot(data,
+  main = "Adquisición de cuenta por nivel educativo",
+  xlab = "Nivel educativo",
+  ylab = "Adquisición de cuenta",
+  color = c("lightblue3", "hotpink")
+)
+legend(
+  "bottomright",
+  legend = c("No (0)", "Sí (1)"),
+  fill = c("lightblue3", "hotpink"),
+  title = "Adquisición de cuenta"
+)
+```
+
+Campaña por adquisición de ahorro:
+
+```{r}
+kable(
+  df %>%
+    group_by(adq_ahorro) %>%
+    summarise(
+      media = mean(campana),
+      mediana = median(campana),
+      moda = mfv(campana),
+      cv = cv(campana),
+    ) %>%
+    r()
+)
+kable(
+  df %>%
+    group_by(adq_ahorro) %>%
+    summarise(
+      max = max(campana),
+      min = min(campana),
+      rango = max(campana) - min(campana),
+      sd = sd(campana),
+    ) %>%
+    r()
+)
+
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+df_aux <- df[df$pdias != -1, ]
+boxplot(
+  df_aux$pdias ~ df_aux$adq_ahorro,
+  names = c("No", "Si"),
+  col = c("lightblue3", "hotpink"), 
+  main = "Días desde último contacto por adquisición de cuenta", 
+  ylab = "Días desde el último contacto (pdias)", 
+  xlab = "Adquisición de cuenta de ahorro",
+  lab = "Adquisición de la cuenta"
+)
+
+df_aux_2 <- df %>% filter(pdias == -1)
+pdias_table <- table(df_aux_2$adq_ahorro)
+
+colors <- c("hotpink", "lightblue3")
+labels <- paste0(r(100 * pdias_table / sum(pdias_table)), "%")
+
+pie(
+  pdias_table,
+  main = "Adquisición de cuenta (clientes no contactados previamente)",
+  labels = labels,
+  col = colors
+)
+legend("topleft", legend = c("No adquirió", "Sí adquirió"), fill = colors)
+```
+
+:::
+
+::::
+
+## Probabilidades empíricas: Variable 1
+
+**Nivel de educación** (`educacion`)
+
+> Seleccionar una persona al azar del presente estudio y observar su nivel educativo (`educacion`).
+
+Espacio muestral:
+
+$$
+\Omega = \{ \text{primaria}, \text{secundaria}, \text{terciario} \}.
+$$
+
+Probabilidades empíricas:
+
+$$
+\begin{align}
+& \mathbb{P}(\text{primaria}) = \frac{331}{2239} \approx 0.14 \\
+& \mathbb{P}(\text{secundaria}) = \frac{1247}{2239} \approx 0.56 \\
+& \mathbb{P}(\text{terciario}) = \frac{661}{2239} \approx 0.3
+.\end{align}
+$$
+
+Comprobación:
+
+$$
+\mathbb{P}(\text{primaria}) + P(\text{secundaria}) + P(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1.
+$$
+
+## Probabilidades empíricas: Variable 2
+
+**Número de contactos durante la última campaña** (`campana`)
+
+> Seleccionar una persona al azar del presente estudio y observar el número de contactos realizados a dicho cliente durante la última campaña.
+
+Espacio muestral:
+
+$$
+\Omega = \{ \text{1 contacto}, \text{2 contactos}, \text{3 contactos}, \text{4 contactos}, \text{De 5 a 10 contactos}, \text{Más de 10 contactos} \}
+$$
+
+Probabilidades empíricas:
+
+$$
+\begin{align}
+& \mathbb{P}(\text{1 contacto}) = \frac{869}{2239} \approx 0.39 && \mathbb{P}(\text{2 contactos}) = \frac{612}{2239} \approx 0.27 \\
+& \mathbb{P}(\text{3 contactos}) = \frac{263}{2239} \approx 0.12 && \mathbb{P}(\text{4 contactos}) = \frac{170}{2239} \approx 0.08 \\
+& \mathbb{P}(\text{De 5 a 10 contactos}) = \frac{258}{2239} \approx 0.12 && \mathbb{P}(\text{Más de 10 contactos}) = \frac{67}{2239} \approx 0.03
+.\end{align}
+$$
+
+Comprobación:
+
+$$
+\mathbb{P}(\text{1 contacto}) + \ldots + P(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1
+.$$
+
+## Probabilidad condicional
+
+- $E_1$: Seleccionar un cliente al azar del estudio cuyo estado civil sea "**married**" (casado).
+- $E_2$: Seleccionar un cliente al azar del estudio que **haya adquirido** la cuenta de ahorro.
+
+```{r}
+tab <- addmargins(table(df$estciv, df$adq_ahorro))
+kable(tab)
+```
+
+$$
+\mathbb{P}(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = P(E_1) \cdot P(E_2)
+$$
+
+$$
+\mathbb{P}(E_1 | E_2) =  \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = P(E_1).
+$$
+
+$$
+\mathbb{P}(E_2 | E_1) =  \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = P(E_2).
+$$
+
+Los eventos son **dependientes**, pero no por mucho margen.
+
+## Variable discreta 1
+
+> $X_1$: Número de personas del total que han sido contactadas a lo mucho 2 veces durante la campaña.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+n <- nrow(df)
+p <- sum(df$campana <= 2) / n
+
+plot(
+  0:n,
+  dbinom(0:n, n, p),
+  main = "Distribución de probabilidad de X1",
+  type = "h",
+  xlab = "Valor esperado para X1",
+  ylab = "P(X1 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+d_mean <- n * p
+d_var <- n * p * (1 - p)
+d_radius <- 3 * sqrt(d_var)
+
+start <- round(d_mean - d_radius)
+end <- round(d_mean + d_radius)
+
+barplot(
+  dbinom(start:end, n, p),
+  names.arg = start:end,
+  main = "Distribución de probabilidad de X1 (parte central)",
+  xlab = "Valor esperado para X1",
+  ylab = "P(X1 = k)",
+  col = "hotpink",
+  space = 0
+)
+```
+
+:::
+
+::::
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+- $\operatorname{E}(X_1) = 1481$ (valor esperado)
+- $\operatorname{V}(X_1) = 501.38$ (varianza)
+- $\operatorname{SD}(X_1) = 22.39$ (desviación estándar)
+- $\operatorname{CV}(X_1) = 0.02$ (coeficiente de variación)
+
+:::
+
+::: {.column width="50%"}
+
+$$
+\mathbb{P}(X_1 = 1500) = 0.01
+$$
+
+$$
+\mathbb{P}(1300 \leq X_1 \leq 1500) = 0.81
+$$
+
+:::
+
+::::
+
+## Variable discreta 2
+
+> $X_2$: Número de personas del subconjunto de 1000 seleccionado del total de 1872 (quienes adquirieron la cuenta de ahorro) que tienen al menos 60 años.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+df_adq <- df %>% filter(adq_ahorro == 1)
+N <- nrow(df_adq)
+n <- 1000
+k <- sum(df_adq$edad >= 60)
+
+plot(
+  0:n,
+  dhyper(0:n, k, N - k, n),
+  main = "Distribución de probabilidad de X2",
+  type = "h",
+  xlab = "Valor esperado para X2",
+  ylab = "P(X2 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+d_mean <- (n * k) / N
+d_var <- (N - n) / (N - 1) * n * (k / N) * (1 - k / N)
+d_radius <- 3 * sqrt(d_var)
+
+start <- round(d_mean - d_radius)
+end <- round(d_mean + d_radius)
+
+barplot(
+  dhyper(start:end, k, N - k, n),
+  names.arg = start:end,
+  main = "Distribución de probabilidad de X2 (parte central)",
+  xlab = "Valor esperado para X2",
+  ylab = "P(X2 = k)",
+  col = "hotpink",
+  space = 0
+)
+```
+
+:::
+
+::::
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+- $\operatorname{E}(X_2) = 42.71$ (valor esperado)
+- $\operatorname{V}(X_2) = 19.07$ (varianza)
+- $\operatorname{SD}(X_2) = 4.37$ (desviación estándar)
+- $\operatorname{CV}(X_2) = 0.1$ (coeficiente de variación)
+
+:::
+
+::: {.column width="50%"}
+
+$$
+\mathbb{P}(X_2 \geq 45) = 0.34
+$$
+
+$$
+\mathbb{P}(X_2 = 45) = 0.08
+$$
+
+:::
+
+::::
+
+## Variable discreta 3
+
+> $X_3$: Cantidad de selecciones aleatorias (sin repetición) del conjunto de 1838 personas que no fueron contactadas (`pdias == -1`) del presente estudio hasta seleccionar una que no haya adquirido la cuenta de ahorro.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+df_no_cntc <- df %>% filter(pdias == -1)
+p <- sum(df_no_cntc$adq_ahorro == 0) / nrow(df_no_cntc)
+
+lim <- 200
+
+plot(
+  0:lim,
+  dgeom(0:lim, p),
+  main = "Distribución de probabilidad de X3",
+  type = "h",
+  xlab = "Valor esperado para X3",
+  ylab = "P(X3 = k)",
+  lwd = 3,
+  col = "hotpink"
+)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+d_mean <- 1 / p
+d_var <- (1 - p) / p^2
+d_radius <- 3 * sqrt(d_var)
+
+start <- max(round(d_mean - d_radius), 0)
+end <- round(d_mean + d_radius)
+
+barplot(
+  dgeom(start:end, p),
+  names.arg = start:end,
+  main = "Distribución de probabilidad de X3 (parte central)",
+  xlab = "Valor esperado para X3",
+  ylab = "P(X3 = k)",
+  col = "hotpink",
+  space = 0
+)
+```
+
+:::
+
+::::
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+- $\operatorname{E}(X_3) = 6.11$ (valor esperado)
+- $\operatorname{V}(X_3) = 31.18$ (varianza)
+- $\operatorname{SD}(X_3) = 5.58$ (desviación estándar)
+- $\operatorname{CV}(X_3) = 0.91$ (coeficiente de variación)
+
+:::
+
+::: {.column width="50%"}
+
+$$
+\mathbb{P}(X_3 = 10) = 0.03
+$$
+
+$$
+\mathbb{P}(X_3 > 10) = 0.14
+$$
+
+:::
+
+::::
+
+## Variable continua
+
+$X_4$: Balance de una persona seleccionada al azar de las 1872 que adquirieron la cuenta de ahorro en el estudio.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+```{r}
+max_bal <- 6000
+
+df_adq_filt <- df_adq %>% filter(balance < max_bal)
+beta <- mean(df_adq_filt$balance)
+
+lambda <- 1 / beta
+
+x <- seq(min(df_adq_filt$balance), max(df_adq_filt$balance), length = 100)
+
+hist(
+  df_adq_filt$balance,
+  probability = TRUE,
+  main = paste("Distribución de probabilidad de X4 (balances < ", max_bal, ")", sep = ""),
+  xlab = "Balance (x)",
+  ylab = "P(X4 = x)",
+  col = "hotpink",
+  breaks = 30
+)
+lines(x, dexp(x, lambda), col = "red", lwd = 2)
+```
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+x <- seq(min(df_adq$balance), max(df_adq$balance), length = 100)
+
+hist(
+  df_adq$balance,
+  probability = TRUE,
+  main = paste("Distribución de probabilidad de X4 (nuevo modelo)"),
+  xlab = "Balance (x)",
+  ylab = "P(X4 = x)",
+  col = "hotpink",
+  breaks = 30
+)
+lines(x, dexp(x, lambda), col = "red", lwd = 2)
+```
+
+:::
+
+::::
+
+$$
+\text{SD teórica} = 965.2635, \qquad \text{SD empírica} = 1261.765
+$$
+
+## Conclusiones
+
+1. Los balances de quienes adquirieron la cuenta son, en general, superiores a los de quienes no la adquirieron. Se observa una leve relación entre la mora y adquirir la cuenta.
+2. La mayoría de los encuestados con edades atípicas adquirieron la cuenta de ahorro. Entre quienes adquirieron la cuenta hay ligeramente menos individuos casados.
+3. Las personas con nivel educativo de secundaria son ligeramente más propensas a adquirir una cuenta de ahorro. El nivel educativo de primaria presenta la menor tasa de adquisición de cuentas.
+4. En algunos casos, un mayor número de contactos parece estar asociado con una mayor probabilidad de adquisición. La mayoría de los encuestados tomaron la decisión de aceptar o rechazar la cuenta en el primer contacto.
+5. Las personas que adquieren la cuenta tienden a hacerlo en un período ligeramente menor tras el último contacto en comparación con quienes no la adquieren. Hay una cantidad considerable de clientes que adquirieron una cuenta sin haber sido contactados.

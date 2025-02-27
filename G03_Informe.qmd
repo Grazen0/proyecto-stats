@@ -22,9 +22,7 @@ number-sections: true
 
 ### Relevancia
 
-El marketing es una disciplina fundamental para las empresas, ya que permite atraer clientes y promover productos o servicios de manera estratégica. A través de diversas herramientas y canales, las organizaciones buscan optimizar sus esfuerzos para lograr una mayor eficiencia en sus campañas.
-
-En el caso de una institución bancaria, gran parte del marketing se realiza mediante llamadas telefónicas para ofrecer productos financieros como cuentas de ahorro. Para mejorar la eficiencia de estas campañas, el perfilamiento de clientes resulta clave. Mediante la segmentación basada en características financieras y demográficas, se pueden identificar los clientes con mayor probabilidad de aceptar la oferta. Esto permite reducir el número de llamadas innecesarias y mejorar los resultados de la estrategia de marketing. Este proyecto se basa en el análisis de datos de una campaña telefónica de un banco para optimizar el proceso de captación de clientes interesados en abrir una cuenta de ahorro.
+El perfilamiento de clientes es clave para optimizar las campañas telefónicas de un banco al ofrecer cuentas de ahorro. Este proyecto analiza datos de una campaña para mejorar la eficiencia en la captación de clientes mediante la segmentación financiera y demográfica.
 
 ### Planificación
 
@@ -59,6 +57,20 @@ gantt
     (Leisy) Análisis descriptivo (medidas de resumen)               :done,    2025-01-31, 3d
     (José y Daniela) Conclusiones                                   :done,    2025-02-03, 2d
     (Todos) Revisión final                                          :done     2025-02-05, 1d
+  section Avance 1
+    (Daniela) Variable 1                                            :done,    2025-02-11, 1d
+    (Grayson) Variable 2                                            :done,    2025-02-11, 2d
+    (Todos) Revisión final                                          :done,    2025-02-13, 1d
+  section Avance 2
+    (Leisy) Variable discreta 1                                     :done,    2025-02-17, 2d
+    (Fali) Variable discreta 2                                      :done,    2025-02-17, 2d
+    (Vincenzo) Variable discreta 3                                  :done,    2025-02-18, 1d
+    (Grayson) Variable continua                                     :done,    2025-02-18, 2d
+    (Daniela) Nuevas conclusiones                                   :done,    2025-02-19, 2d
+    (Todos) Revisión final                                          :done,    2025-02-21, 1d
+  section Informe
+    (Daniela) Ediciones de redacción                                :done,    2025-02-23, 2d
+    (Todos) Revisión final                                          :done,    2025-02-24, 2d
 ```
 
 ### Objetivos
@@ -77,20 +89,15 @@ Dentro del marco del objetivo general, nuestro grupo considera los siguientes ob
 4. Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
 5. Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
 
-Cabe destacar que en todos estos objetivos se hace presente la variable `adq_ahorro` como la variable dependiente a analizar.
-
 ## Datos
 
 ### Población objetivo
 
-Acorde con el [enlace](https://www.kaggle.com/competitions/estadstica-para-ciencia-de-datos/data) provisto en la referencia del documento informativo sobre los datos, la población objetivo de este proyecto son los clientes del banco "RICARDO PALMA BANK".
+Acorde con el [enlace](https://www.kaggle.com/competitions/estadstica-para-ciencia-de-datos/data) provisto en la referencia de los datos, la población objetivo de este proyecto son los clientes del banco "RICARDO PALMA BANK".
 
 ### Tipo de muestreo
 
-Dado que los datos con los que trabajamos en este proyecto fueron provistos por los docentes del curso y no hay suficiente información sobre su origen, no se puede determinar con certeza el tipo de muestreo utilizado para recolectarlos. Sin embargo, algunos tipos de muestreo que se podría haber utilizado son los siguientes:
-
-- **Muestreo por juicio**: Es posible que el banco y el área de marketing hayan escogido la muestra según un criterio a experiencia.
-- **Muestreo sistemático:** De forma similar al anterior, es posible que el banco haya escogido clientes de una base de datos a partir de cierto punto inicial y con algún intervalo entre clientes elegidos.
+Dado que los datos con los que trabajamos en este proyecto fueron provistos por los docentes del curso y no hay suficiente información sobre su origen, no se puede determinar con certeza el tipo de muestreo utilizado para recolectarlos.
 
 ### Tratamiento de datos {#sec-treatment}
 
@@ -113,241 +120,81 @@ library_checked("ggplot2")
 library_checked("knitr")
 ```
 
-En esta sección mostraremos el estado actual de los datos, lo que falta arreglar y cómo lo arreglaremos en la @sec-cleaning.
-
 ```{r}
 df <- suppressMessages(read_csv("AdquisicionAhorro.csv"))
 df
 ```
 
-En total, la tabla tiene `r ncol(df)` columnas (es decir, variables) y `r nrow(df)` filas (es decir, observaciones).
+En total, la tabla tiene `r ncol(df)` columnas y `r nrow(df)` filas.
 
-Podemos notar que la variable `balance`, en lugar de ser teóricamente numérica, es de tipo "texto". Esto significa que contiene al menos un dato que no se puede convertir a un número. Arreglaremos esto con `as.numeric`, forzando convertir la columna a números y dejando aquellos valores no numéricos como `NA`.
+La variable `balance` es de tipo "texto". Arreglaremos esto con la función `as.numeric`.
 
-Podemos observar también los datos faltantes por columna:
+Se observan los datos faltantes por columna:
 
 ```{r}
 colSums(is.na(df))
 ```
 
-En total, esto constituye `r sum(is.na(df))` datos faltantes, lo cual es aproximadamente un `r round(100 * sum(is.na(df)) / (ncol(df) * nrow(df)))`% del total de `r ncol(df) * nrow(df)` datos presentes en la tabla. En términos de observaciones, los datos contienen `r sum(!complete.cases(df))` observaciones con algún dato faltante, lo cual es un `r round(100 * sum(!complete.cases(df)) / nrow(df))`% del total. Además, la columna `educacion` contiene `r sum(na.omit(df$educacion) == "desconocido")` datos de tipo `"desconocido"`. Este valor, en la práctica, es equivalente a un dato faltante (`NA`), así que también será tratado con el resto de datos faltantes.
+Esto constituye `r sum(is.na(df))` datos faltantes: un `r round(100 * sum(is.na(df)) / (ncol(df) * nrow(df)))`% del total de `r ncol(df) * nrow(df)`. Esto son `r sum(!complete.cases(df))` observaciones con algún dato faltante: un `r round(100 * sum(!complete.cases(df)) / nrow(df))`% del total.
 
-Los datos faltantes, en su mayoría, serán tratados mediante **imputación de datos**. Usaremos la moda para las variables categóricas y media o mediana para las numéricas (según el criterio del coeficiente de variación). Sin embargo, para la columna `pdias`, optamos por eliminar las observaciones donde esta variable sea `NA`. Tomamos esta decisión porque esta variable no sólo contiene números, sino valores "nulos" encodificados como `-1`, por lo que la media o mediana podrían no ser representativas. De todas maneras, `pdias` solo tiene un dato faltantes, así que esta decisión no causa mayor problema.
-
-En el caso de `adq_ahorro`, si tuviese datos faltantes (porque no los tiene), optaríamos también por eliminar sus observaciones correspondientes. Este es un caso especial, porque `adq_ahorro` es la variable dependiente del análisis, así que no sería prudente imputar en dicha variable.
-
-En tercer lugar, como veremos más adelante, esta tabla no contiene datos fuera de los rangos apropiados para cada variable. Sin embargo, de no haber sido así, optaríamos por reemplazar dichos datos por `NA` y tratarlos junto al resto de datos faltantes.
+Los datos faltantes mayormente serán tratados mediante **imputación de datos**. Sin embargo, para la columna `pdias`, optamos por eliminar las observaciones donde esta variable sea `NA`, porque esta variable sólo tiene un dato faltante.
 
 ### Variables {#sec-variables}
 
 De acuerdo a los objetivos específicos de este informe (véase @sec-specific-objectives), las variables que consideraremos para este análisis son las siguientes:
 
+| Variable                                           |              Tipo               | Descripción                                                                                                        | Restricciones                                       |
+| :------------------------------------------------- | :-----------------------------: | :----------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
+| **Edad** (`edad`)                                  |      cuantitativa discreta      | Edad del encuestado.                                                                                               | $\geq 18$.                                          |
+| **Estado civil** (`estciv`)                        |       cualitativa nominal       | Estado civil del encuestado.                                                                                       | Uno de `"married`, `"single"`, `"divorced"`.        |
+| **Educación** (`educacion`)                        |       cualitativa ordinal       | Nivel educativo del encuestado.                                                                                    | Uno de `"primaria"`, `"secundaria"`, `"terciario"`. |
+| **Mora** (`mora`)                                  | cualitativa nominal, dicotómica | Si el encuestado posee crédito en mora.                                                                            | Uno de `"si"`, `"no"`.                              |
+| **Balance** (`balance`)                            |      cuantitativa continua      | Balance promedio anual en euros del encuestado.                                                                    | Mayor o igual a $0$.                                |
+| **Campaña** (`campana`)                            |      cuantitativa discreta      | Número de contactos realizados con el encuestado durante la presente campaña.                                      | Mayor a $0$.                                        |
+| **PDias** (`pdias`)                                |      cuantitativa discreta      | Número de días transcurridos desde el último contacto con el encuestado (o `-1` si no fue contactado previamente). | Mayor a $0$ o igual a $-1$.                         |
+| **Adquisición de cuenta de ahorro** (`adq_ahorro`) | cualitativa nominal, dicotómica | Si el encuestado adquirió la cuenta de ahorro.                                                                     | Igual a $0$ o a $1$.                                |
+
 : Variables a utilizar en el proyecto {#tbl-variables}
-
-| Variable                                           |              Tipo               | Descripción                                                                                                                   | Restricciones                                       |
-| :------------------------------------------------- | :-----------------------------: | :---------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------- |
-| **Edad** (`edad`)                                  |      cuantitativa discreta      | La edad del encuestado.                                                                                                       | Mayor o igual a $18$.                               |
-| **Estado civil** (`estciv`)                        |       cualitativa nominal       | El estado civil del encuestado.                                                                                               | Uno de `"married` `"single"`, `"divorced"`.         |
-| **Educación** (`educacion`)                        |       cualitativa ordinal       | El nivel educativo con el que cuenta el encuestado.                                                                           | Uno de `"primaria"`, `"secundaria"`, `"terciario"`. |
-| **Mora** (`mora`)                                  | cualitativa nominal, dicotómica | Indica si el encuestado posee crédito en mora.                                                                                | Uno de `"si"`, `"no"`.                              |
-| **Balance** (`balance`)                            |      cuantitativa continua      | El balance promedio anual en euros del encuestado.                                                                            | Mayor o igual a $0$.                                |
-| **Campaña** (`campana`)                            |      cuantitativa discreta      | El número de contactos realizados con el encuestado durante la presente campaña, incluyendo el último contacto.               | Mayor a $0$.                                        |
-| **PDias** (`pdias`)                                |      cuantitativa discreta      | Número de días transcurridos desde el último contacto con el encuestado (o `-1` en caso no haya sido contactado previamente). | Mayor a $0$ o igual a $-1$.                         |
-| **Adquisición de cuenta de ahorro** (`adq_ahorro`) | cualitativa nominal, dicotómica | Indica si el encuestado suscribió un depósito a plazo (es decir, si adquirió la cuenta de ahorro).                            | Igual a $0$ o a $1$.                                |
-
-:::{.callout-note}
-Algunos detalles relevantes:
-
-1. Clasificamos a `adq_ahorro` como cualitativa (y dicotómica) porque es esencialmente un sí/no codificado como 1/0.
-2. Establecemos un límite inferior de 18 años para `edad` porque es la edad mínima para abrir una cuenta de banco.
-
-:::
 
 ### Limpieza {#sec-cleaning}
 
-Las siguientes funciones nos serán útiles a lo largo de lo que resta del documento.
+*Omitido, fue presentado en la primera entrega.*
 
 ```{r}
-# Redondea un número a 2 decimales
+#| echo: false
+
 r <- function(x) {
   return(round(x, digits = 2))
 }
 
-# Calcula el coeficiente de variación de `x`
 cv <- function(x, na.rm = FALSE) {
   return(sd(x, na.rm = na.rm) / mean(x, na.rm = na.rm))
 }
-```
 
-#### Transformación de datos
-
-Renombraremos la última columna de `df` para tener consistencia entre los nombres de todas las columnas:
-
-```{r}
 if ("Adq_Ahorro" %in% colnames(df)) {
   df <- df %>% rename(adq_ahorro = Adq_Ahorro)
 }
-```
 
-##### Eliminación de variables innecesarias
-
-Acorde con los objetivos establecidos, conservaremos únicamente las variables mencionadas en la @sec-variables.
-
-```{r}
 df <- df %>% select(edad, estciv, educacion, mora, balance, campana, pdias, adq_ahorro)
-```
 
-##### Arreglo del tipo de `balance`
-
-Usaremos la función `as.numeric` para convertir a la fuerza los datos de `balance` a números. Los que no se puedan convertir correctamente se convertirán en `NA`.
-
-```{r}
 df <- df %>% mutate(balance = as.numeric(balance))
-```
 
-#### Tratamiento de datos faltantes
-
-##### Imputación de datos
-
-Para las variables categóricas, imputaremos como reemplazo a los datos faltantes la **moda** de los datos existentes.
-
-```{r}
 df <- df %>% mutate(
   estciv = replace_na(estciv, mfv(estciv)),
   educacion = replace(educacion, is.na(educacion) | educacion == "desconocido", mfv(educacion)),
   mora = replace_na(mora, mfv(mora))
 )
-```
 
-::: {.callout-note}
-Nótese que en la columna `educacion` imputamos también sobre las celdas que contienen `"desconocido"`, como se mencionó en la @sec-treatment.
-:::
-
-Para las variables numéricas, consideramos dos métodos de imputación: la **media** y la **mediana**. La selección de la medida a usar para imputar los datos faltantes se hará según el coeficiente de variación.
-
-```{r}
-apply(df %>% select(edad, balance, campana), 2, function(x) cv(x, na.rm = TRUE))
-```
-
-El criterio que usaremos es el siguiente:
-
-- Si $\text{CV} < 30\%$, entonces se imputará la **media**, ya que los datos son homogéneos.
-- Si $\text{CV} \geq 30\%$, entonces se imputará la **mediana**, ya que los datos se inclinan más hacia ser heterogéneos.
-
-Además, si la variable imputada debe ser discreta, el valor de reemplazo se redondea al entero más cercano.
-
-```{r}
 df <- df %>% mutate(
-  edad = replace_na(edad, round(mean(edad, na.rm = TRUE))),           # CV = 0.26: media redondeada
-  balance = replace_na(balance, median(balance, na.rm = TRUE)),       # CV = 2.08: mediana
-  campana = replace_na(campana, round(median(campana, na.rm = TRUE))) # CV = 1.13: mediana redondeada
+  edad = replace_na(edad, round(mean(edad, na.rm = TRUE))),
+  balance = replace_na(balance, median(balance, na.rm = TRUE)),
+  campana = replace_na(campana, round(median(campana, na.rm = TRUE)))
 )
-```
 
-##### Eliminación de observaciones
-
-Como mencionamos en la @sec-treatment, se eliminarán las observaciones donde `pdias` tenga valor faltante. Como en este caso solo es una observación, no causa problemas.
-
-```{r}
 df <- df %>% filter(!is.na(pdias))
 ```
 
-#### Comprobaciones finales
-
-##### Búsqueda de datos atípicos
-
-Para las variables numéricas, es prudente comprobar que la data no salga de rangos realistas (no debería haber alguna edad, por ejemplo, de 200 años).
-
-```{r}
-summary(df %>% select(edad, balance, campana, pdias))
-```
-
-La columna `edad` presenta un rango aceptable: de `r min(df$edad)` a `r max(df$edad)` años.
-
-La columna `balance`, por su máximo, podría levantar sospechas. Sin embargo, un diagrama de caja ayuda a visualizar que la mayoría de datos se encuentran alrededor de la mediana de `r median(df$edad)` euros.
-
-```{r}
-#| echo: false
-#| label: fig-balance-boxplot
-#| fig-cap: Balance promedio anual de los encuestados
-
-boxplot(
-  df$balance,
-  main = "Balance promedio anual",
-  ylab = "Balance (euros)"
-)
-```
-
-El valor máximo de `balance` es un valor atípico pero posible, por lo que debe ser conservado.
-
-La columna `campana` también podría levantar sospechas, pero su diagrama de caja nos facilita una conclusión similar a la anterior:
-
-```{r}
-#| echo: false
-#| label: fig-campana-boxplot
-#| fig-cap: Número de contactos realizados durante la campaña
-
-boxplot(
-  df$campana,
-  main = "Número de contactos realizados durante la campaña",
-  ylab = "Número de contactos"
-)
-```
-
-El máximo de `campana`, aunque es comparablemente alto al resto, es posible en la vida real.
-
-Finalmente, conviene para una comprobación de `pdias` obviar los valores `-1`, de forma que analicemos solamente sus valores no-nulos.
-
-```{r}
-summary(df$pdias[df$pdias != -1])
-```
-
-Ocurre un caso similar a los anteriores.
-
-```{r}
-#| echo: false
-#| label: fig-pdias-boxplot
-#| fig-cap: Días desde el último contacto al cliente
-
-boxplot(
-  df$pdias,
-  main = "Días desde el último contacto al cliente",
-  ylab = "Días desde el último contacto"
-)
-```
-
-La mayoría de los datos de `pdias` se encuentran alrededor de la mediana, `r median(df$pdias[df$pdias != -1])`, mientras que los más altos son pocos y, en cualquier caso, posibles en la vida real.
-
-##### Consistencia de las variables categóricas
-
-Finalmente, es preciso comprobar que las variables categóricas tengan valores consistentes. Por ejemplo, la columna `estciv` no debería contener valores como, por ejemplo, `"Married"` o `"SINGLE"`.
-
-Para esto, podemos calcular los valores únicos de cada variable categórica:
-
-```{r}
-apply(df %>% select(estciv, educacion, mora, adq_ahorro), 2, unique)
-```
-
-Podemos comprobar que las variables categóricas tienen valores consistentes.
-
-#### Resultado final
-
-Mostramos a continuación un vistazo al resultado de la base de datos tras la limpieza:
-
-```{r}
-summary(df)
-df
-```
-
-Además, podemos comprobar que está libre de datos faltantes:
-
-```{r}
-colSums(is.na(df))
-```
-
 ## Análisis descriptivo
-
-Utilizaremos la siguiente función para algunos gráficos donde queramos observar una cierta porción de los datos alrededor de la mediana.
 
 ```{r}
 filter_outliers <- function(x, factor = 1.5) {
@@ -359,10 +206,6 @@ filter_outliers <- function(x, factor = 1.5) {
 ```
 
 ### Organización de datos
-
-Se presentan aquí, por objetivo, las gráficos que serán referenciados en el análisis de medidas de resumen (véase @sec-medidas).
-
-#### Objetivo 1
 
 ```{r}
 #| echo: false
@@ -402,16 +245,14 @@ ggplot(data_long, aes(x = Mora, y = Porcentaje, fill = Group)) +
   scale_y_continuous(labels = scales::percent)
 ```
 
-#### Objetivo 2
-
 ```{r}
 #| echo: false
 #| label: fig-edad-adq
-#| fig-cap: Edad por adquisición de cuenta de ahorro
+#| fig-cap: Edad por adquisición de cuenta
 
 boxplot(
   df$edad ~ df$adq_ahorro,
-  main = "Edad por adquisición de cuenta de ahorro",
+  main = "Edad por adquisición de cuenta",
   xlab = "Adquisición de la cuenta de ahorro", 
   ylab = "Edad (años)",
   names = c("no", "sí"),
@@ -470,8 +311,6 @@ boxplot(
 )
 ```
 
-#### Objetivo 3
-
 ```{r}
 #| echo: false
 #| label: fig-adq-educacion
@@ -481,7 +320,7 @@ data <- table(df$educacion, df$adq_ahorro)
 mosaicplot(data,
   main = "Adquisición de cuenta por nivel educativo",
   xlab = "Nivel educativo",
-  ylab = "Adquisición de cuenta (0 = no, 1 = sí)",
+  ylab = "Adquisición de cuenta",
   color = c("lightblue3", "hotpink")
 )
 legend(
@@ -491,10 +330,6 @@ legend(
   title = "Adquisición de cuenta"
 )
 ```
-
-#### Objetivo 4
-
-<!-- TODO: debe existir un mejor grafico para mostrar atipicos -->
 
 ```{r}
 #| echo: false
@@ -512,10 +347,6 @@ ggplot(df, aes(x = factor(adq_ahorro), y = campana, fill = factor(adq_ahorro))) 
   scale_fill_manual(values = c("0" = "lightblue3", "1" = "hotpink")) +
   theme_light()
 ```
-
-:::{.callout-note}
-Aunque las cajas de este gráfico salen aplanadas debido al rango que abarcan los datos atípicos, escogimos este gráfico precisamente para mostrar dichos datos atípicos (más que para mostrar los quartiles).
-:::
 
 ```{r}
 #| echo: false
@@ -555,8 +386,6 @@ barplot(
 )
 ```
 
-#### Objetivo 5
-
 ```{r}
 #| echo: false
 #| label: fig-pdias-adq
@@ -566,9 +395,10 @@ df_aux <- df[df$pdias != -1, ]
 boxplot(
   df_aux$pdias ~ df_aux$adq_ahorro,
   names = c("No", "Si"),
-  col = c("lightblue3", "hotpink"), 
-  main = "Días desde último contacto por adquisición de cuenta", 
-  ylab = "Días desde el último contacto (pdias)", 
+  col = c("lightblue3", "hotpink"),
+  main = "Días desde último contacto por adquisición de cuenta",
+  ylab = "Días desde el último contacto (pdias)",
+  xlab = "Adquisición de cuenta de ahorro",
   lab = "Adquisición de la cuenta"
 )
 ```
@@ -597,11 +427,7 @@ legend("topleft", legend = c("No adquirió", "Sí adquirió"), fill = colors)
 
 #### Análisis univariado
 
-Para este proyecto, el análisis univariado no es de mucha utilidad más allá de ofrecer vistazos generales a cada variable, lo cual no aporta a nuestros objetivos. Sin embargo, el **objetivo 4** (el cual será mejor profundizado en la @sec-objective-4), hace uso de uno de estos gráficos.
-
-Con respecto a la variable `campana`, de la @fig-campana-no-outlier (de la cual se excluyen los datos atípicos por claridad) se puede observar que la mayoría de los encuestados aceptaron o rechazaron la apertura de la cuenta de ahorro en el primer contacto, dado que la moda de esta variable es 1. Este resultado sugiere la relevancia de la primera impresión que el banco genera en sus clientes.
-
-Consideramos a la moda como la medida mejor representativa de esta variable para este análisis debido a la conclusión mencionada anteriormente. El resto medidas de esta variable serán analizadas de forma bivariada en la sección de su objetivo correspondiente, ya que, salvo el análisis anterior, analizarla de forma univariada no contribuye a nuestros objetivos.
+Con respecto a la variable `campana` (objetivo 4), de la @fig-campana-no-outlier, la moda indica que la mayoría de los encuestados aceptaron o rechazaron la cuenta de ahorro en el primer contacto.
 
 #### Análisis bivariado
 
@@ -609,63 +435,39 @@ Consideramos a la moda como la medida mejor representativa de esta variable para
 
 > Analizar la relación entre el estado financiero de un cliente (`balance`, `mora`) y su predisposición a aceptar una cuenta de ahorro.
 
-Para el análisis de balance y mora, es fundamental realizar comparaciones detalladas entre las variables que nos interesan, especialmente en relación con la variable relacionada a la adquisición de la cuenta de ahorro. Con respecto a `balance`, al analizar la @fig-balance-adq se puede apreciar que el primer cuartil y la mediana se mantienen bastante similares entre aquellos que han adquirido la cuenta de ahorro y aquellos que no lo han hecho.
+Con respecto a `balance`, al analizar la @fig-balance-adq la mediana y el primer cuartil son similares en ambos grupos, pero el tercer cuartil es mayor en quienes adquirieron la cuenta, indicando mayor variabilidad y concentración de valores altos.
 
-Sin embargo, al observar el tercer cuartil, se nota que este valor es visiblemente mayor en el grupo de personas que sí adquirieron la cuenta de ahorro, lo que indica una mayor concentración de valores altos en esta categoría. Además, la desviación estándar es considerablemente mayor en el grupo que posee la cuenta, lo que implica una mayor dispersión de los datos y, por lo tanto, una mayor heterogeneidad en los balances registrados. Este fenómeno puede ser indicativo de comportamientos financieros más variados entre los clientes que optan por esta modalidad.
-
-Con respecto a `mora`, es importante señalar que solo una pequeña minoría de los encuestados (específicamente, el `r 100 * r(sum(df$mora == "si") / length(df$mora))`%) presenta mora. No obstante, esta baja frecuencia no descarta que la mora pueda ser un factor importante al momento de estudiar la relación entre la salud financiera y la adopción de la cuenta de ahorro.
-
-En este sentido, la figura @fig-adq-mora revela que existe una proporción ligeramente mayor de personas que aceptan la cuenta de ahorro cuando presentan mora. Sin embargo, es posible que no sea apropiado tomar esta conclusión con mucha seguridad, ya que la muestra de encuestados con mora es extremadamente pequeña y podría no ser representativa de la población.
+Respecto a la mora, aunque pocos encuestados la presentan, podría influir en la adopción de la cuenta. La figura @fig-adq-mora sugiere que quienes tienen mora tienden a aceptarla con mayor frecuencia.
 
 ##### Objetivo 2
 
 > Identificar el impacto de las características demográficas (`edad`, `estciv`) en la decisión de adquirir una cuenta de ahorro.
 
-En cuanto a `edad`, podemos analizar posibles diferencias entre las edades por adquisición de cuenta (véase @fig-edad-adq). En general, los cuartiles de las edades de los encuestados que adquirieron y no adquirieron la cuenta están relativamente cerca. Esta similitud se puede confirmar numéricamente mediante la @tbl-edad-adq, la cual muestra que la mediana y los cuartiles 1 y 3 son similares, si es que no exactamente iguales.
+El análisis de `edad` muestra cuartiles similares en ambos grupos, pero la mayoría de los mayores de 70 años adquirieron la cuenta, sugiriendo un posible patrón (véase @fig-edad-adq y @tbl-edad-adq para una confirmación numérica).
 
-Sin embargo, una observación interesante de este gráfico es que la mayoría de encuestados con edades atípicas (por encima de los ~70 años) sí adquirieron la cuenta de ahorro. Esto podría significar que existe un patrón recurrente con los clientes de dichas edades.
-
-En cuanto a `esticv`, nuevamente podemos realizar una comparación entre quienes adquirieron la cuenta de ahorro y quienes no lo hicieron (véase @fig-estciv-adq). Sin embargo, parece que, a primera vista, no hay una diferencia significativa entre el estado civil de quienes adquirieron la cuenta de ahorro y quienes no. Pese a ello, podemos notar que, entre las personas que sí adquirieron la cuenta, hay *ligeramente* menos individuos casados (divorciados, en su lugar) en comparación a quienes no la adquirieron.
-
-Finalmente, podemos realizar un análisis de las edades por estado civil. (véase @fig-edad-estciv). Se puede observar de aquí que las personas solteras tienden a tener edades menores que las personas casadas o divorciadas, lo cual tiene sentido si consideramos que, intuitivamente, una persona mayor tiene más probabilidad de estar casada que una persona más joven. Además, se puede observar que la caja correspondiente a los individuos divorciados está muy ligeramente movida un poco más arriba que la de los individuos casados. No obstante, es una diferencia pequeña, así que bien podría ser producto de la aleatoriedad de los datos utilizados.
+Respecto al estado `esticv`(véase @fig-estciv-adq),no hay diferencias significativas, aunque hay menos casados entre quienes aceptaron la cuenta. Además, los solteros son generalmente más jóvenes que los casados o divorciados, acorde a tendencias esperadas.
 
 ##### Objetivo 3
 
 > Identificar un posible patrón en el nivel de educación (`educacion`) de las personas que aceptan abrir una cuenta de ahorro.
 
-Al igual que en los objetivos anteriores, podemos hacer una comparación entre el nivel educativo de los individuos que adquirieron la cuenta y los que no. Podemos observar de la @fig-adq-educacion que, a grandes rasgos, el nivel educativo de secundaria es el más propenso a adquirir cuentas de ahorro, aunque por un margen relativamente pequeño. En ese mismo sentido, es el nivel educativo de primaria el que menos adquisiciones de cuentas de ahorro tiene.
+Se observa de la @fig-adq-educacion que, a grandes rasgos, el nivel educativo más propenso a adquirir la cuenta de ahorroes el secundario, mientras que el menos propenso es el nivel primaria.
 
-Sin embargo, es relevante notar que el nivel de educación terciario no sea el predominante en la adquisición de la cuenta, ya que, intuitivamente, una persona con educación superior debería estar informada de mejores prácticas de finanzas. Sin embargo, esto se podría explicar si consideráramos que estas personas podrían haber rechazado la cuenta por ya contar con una en otro banco.
-
-:::{.callout-note}
-Cabe destacar que el diagrama @fig-adq-educacion no se ve afectado por el hecho de que la mayoría de encuestados (específicamente, el `r 100 * r(sum(df$educacion == "secundaria") / length(df$educacion))`%) tengan nivel educativo de secundaria, ya que observa a cada nivel educativo por separado independientemente del tamaño de su muestra particular.
-:::
-
-##### Objetivo 4 {#sec-objective-4}
+##### Objevo 4 {#sec-objective-4}
 
 > Evaluar el efecto de las variables relacionadas con la interacción con el cliente (`campana`) en la decisión de adquirir una cuenta de ahorro.
 
-Como se observa en la @fig-campana-adq y en la @tbl-campana-adq, se realizó el siguiente análisis de los datos correspondientes al número de contactos realizados durante la campaña.
+La media y la mediana del número de contactos son similares en ambos grupos(véase @fig-campana-adq y en la @tbl-campana-adq), indicando que, en promedio, se realizaron casi la misma cantidad de intentos. Sin embargo, la mayor desviación estándar en quienes adquirieron la cuenta sugiere una mayor variabilidad.
 
-En primer lugar, al analizar la media y la mediana, se observa que estos valores son muy similares entre los dos grupos. Esto indica que, en promedio, el número de contactos realizados es prácticamente el mismo en ambos casos. Además, el hecho de que la mediana sea igual en ambos grupos sugiere que la distribución está centrada en torno a este valor.
-
-En cuanto a la desviación estándar y el coeficiente de variación, los clientes que adquirieron la cuenta presentan un valor más alto, lo que indica una mayor dispersión en el número de contactos realizados.
-
-Respecto al número máximo de contactos y el rango, se destaca que el valor máximo registrado es significativamente mayor para los clientes que adquirieron la cuenta (50 frente a 21). Esto sugiere que, en ciertos casos, un mayor número de intentos está asociado con la decisión de adquisición. Asimismo, el rango es más amplio para quienes adquirieron la cuenta (49 frente a 20), lo que reafirma la existencia de una mayor dispersión en este grupo.
-
-Por último, el análisis de la moda revela que, en ambos grupos, el valor más frecuente es 1. Esto indica que la mayoría de los clientes fueron contactados solo una vez, lo que podría sugerir que la decisión de aceptar o rechazar una cuenta de ahorro ocurre principalmente en el primer contacto.
+Además, en algunos casos, un mayor número de intentos se asocia con la adquisición. Finalmente, la moda en ambos grupos es 1, lo que sugiere que la mayoría decide aceptar o rechazar la cuenta en el primer contacto.
 
 ##### Objetivo 5
 
 > Identificar el tiempo posterior promedio de la última llamada a los clientes (`pdias`) antes de aceptar abrir una cuenta de ahorro.
 
-Podemos observar en la @fig-pdias-adq que la media y los cuartiles 1 y 3 para los clientes que adquirieron y no adquirieron la cuenta son ligeramente similares respectivamente, aunque no mucho. En promedio, los clientes que aceptan la cuenta han sido contactados más recientemente que aquellos que no la aceptan. En el gráfico de los clientes que adquirieron una cuenta se aprecia que es más alargada en la parte inferior, indicando que hay más clientes con tiempos de contacto recientes antes de aceptar la cuenta.
+En la @fig-pdias-adq, la media y los cuartiles 1 y 3 son similares entre quienes adquirieron y no adquirieron la cuenta, aunque con diferencias. En promedio, quienes aceptaron la cuenta fueron contactados más recientemente y presentan datos atípicos de hasta 800 días.
 
-Por estas razones, podría resultar útil analizar cómo fueron esos contactos telefónicos que quizá lograron persuadir de mejor manera a aquellos clientes para que en un corto plazo decidan adquirir una cuenta.
-
-Aquellos que sí adquirieron la cuenta también presentan un rango más amplio comparado a los que no adquirieron, lo que implica una mayor dispersión de los datos. Asimismo, estos últimos presentan datos atípicos, llegando incluso hasta alrededor de los 800 días.
-
-En la @fig-adq-no-contactados, en la cual tomamos en cuenta solo a los clientes que no fueron contactados previamente, observamos una clara superioridad en cuando a la cantidad de personas que sí adquirieron una cuenta respecto a los que no lo hicieron. Muchas personas adquirieron pese a no haber sido contactadas. Esto sugiere que el contacto telefónico no es una estrategia de marketing fuerte o, por lo menos, no necesaria y que probablemente estos clientes se convencieron de adquirir una cuenta por otros medios que deberían ser promovidos más que el contacto telefónico.
+La @fig-adq-no-contactados muestra que, entre los clientes no contactados previamente, la mayoría adquirió la cuenta.
 
 ## Análisis probabilístico
 
@@ -673,17 +475,17 @@ En la @fig-adq-no-contactados, en la cual tomamos en cuenta solo a los clientes 
 
 #### Variable 1
 
-La primera variable aleatoria que analizaremos será el **nivel educativo** (`educacion`), de tipo *ordinal* con posibles valores $\text{primaria} < \text{secundaria} < \text{terciario}$, en ese orden. El análisis de probabilidades para esta variable puede ser de utilidad para caracterizar la demográfica a la que las campañas de marketing del banco deberían estar dirigidas.
+La primera variable aleatoria que analizaremos será el **nivel educativo** (`educacion`), de tipo *ordinal* con posibles valores $\text{primaria} < \text{secundaria} < \text{terciario}$, en ese orden. El análisis de probabilidades ayuda a definir la demografía objetivo para las campañas de marketing del banco.
 
 El espacio muestral de esta variable es
 
 $$
-\Omega = \{ \text{primaria}, \text{secundaria}, \text{terciario} \}
-.$$
+\Omega = \{ \text{primaria}, \text{secundaria}, \text{terciario} \}.
+$$
 
 Esta variable corresponde al siguiente experimento:
 
-> Seleccionar una persona al azar del estudio "Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria" y observar su nivel educativo (`educacion`).
+> Seleccionar una persona al azar del presente estudio y observar su nivel educativo (`educacion`).
 
 ##### Eventos atómicos
 
@@ -710,25 +512,25 @@ En total, `educacion` tiene un tamaño efectivo de `r length(df$educacion)`. Por
 
 $$
 \begin{align}
-& P(\text{primaria}) = \frac{331}{2239} \approx 0.14 \\
-& P(\text{secundaria}) = \frac{1247}{2239} \approx 0.56 \\
-& P(\text{terciario}) = \frac{661}{2239} \approx 0.3
+& \mathbb{P}(\text{primaria}) = \frac{331}{2239} \approx 0.14 \\
+& \mathbb{P}(\text{secundaria}) = \frac{1247}{2239} \approx 0.56 \\
+& \mathbb{P}(\text{terciario}) = \frac{661}{2239} \approx 0.3
 .\end{align}
 $$
 
 Podemos comprobar que estas probabilidades son válidas, ya que su suma es $1$:
 
 $$
-P(\text{primaria}) + P(\text{secundaria}) + P(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1
-.$$
+\mathbb{P}(\text{primaria}) + \mathbb{P}(\text{secundaria}) + \mathbb{P}(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1.
+$$
 
 #### Variable 2
 
-La segunda variable aleatoria que analizaremos será el **número de contactos durante la última campaña** (bajo una clasificación categórica de `campana`). El análisis para esta variable es de interés porque podría revelar patrones de comportamiento en los clientes para entender cuántos contactos (y, por lo tanto, cuánto esfuerzo) son necesarios para obtener una respuesta del clienta.
+La segunda variable aleatoria será una clasificación categórica del **número de contactos durante la última campaña** (`campana`) para identificar patrones y determinar cuántos intentos son necesarios para obtener una respuesta del cliente.
 
 Esta variable corresponde al siguiente experimento:
 
-> Seleccionar una persona al azar del estudio "Perfilamiento de clientes que están dispuestos a adquirir una cuenta de ahorro en una institución bancaria" y observar el número de contactos realizados a dicho cliente durante la última campaña.
+> Seleccionar una persona al azar del presente estudio y observar el número de contactos realizados a dicho cliente durante la última campaña.
 
 |      Valores       |      Categoría      |
 | :----------------: | :-----------------: |
@@ -739,7 +541,7 @@ Esta variable corresponde al siguiente experimento:
 | $5, 6, \ldots, 10$ | De 5 a 10 contactos |
 |  $11, 12, \ldots$  | Más de 10 contactos |
 
-Por lo tanto, el espacio muestral de esta variable es
+El espacio muestral de esta variable es
 
 $$
 \begin{align}
@@ -792,22 +594,20 @@ En total, `campana` tiene un tamaño efectivo de `r length(df$campana)`. Por lo 
 
 $$
 \begin{align}
-& P(\text{1 contacto}) = \frac{869}{2239} \approx 0.39 \\
-& P(\text{2 contactos}) = \frac{612}{2239} \approx 0.27 \\
-& P(\text{3 contactos}) = \frac{263}{2239} \approx 0.12 \\
-& P(\text{4 contactos}) = \frac{170}{2239} \approx 0.08 \\
-& P(\text{De 5 a 10 contactos}) = \frac{258}{2239} \approx 0.12 \\
-& P(\text{Más de 10 contactos}) = \frac{67}{2239} \approx 0.03
+& \mathbb{P}(\text{1 contacto}) = \frac{869}{2239} \approx 0.39 \\
+& \mathbb{P}(\text{2 contactos}) = \frac{612}{2239} \approx 0.27 \\
+& \mathbb{P}(\text{3 contactos}) = \frac{263}{2239} \approx 0.12 \\
+& \mathbb{P}(\text{4 contactos}) = \frac{170}{2239} \approx 0.08 \\
+& \mathbb{P}(\text{De 5 a 10 contactos}) = \frac{258}{2239} \approx 0.12 \\
+& \mathbb{P}(\text{Más de 10 contactos}) = \frac{67}{2239} \approx 0.03
 .\end{align}
 $$
 
 Podemos comprobar que estas probabilidades son válidas, ya que su suma es $1$:
 
 $$
-\begin{align*}
-P(\text{1 contacto}) + \ldots + P(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1
-\end{align*}
-.$$
+\mathbb{P}(\text{1 contacto}) + \ldots + \mathbb{P}(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1.
+$$
 
 ### Probabilidad condicional
 
@@ -815,8 +615,6 @@ Para este análisis condicional escogemos las variables **estado civil** (`estci
 
 - **Estado civil**: $\Omega = \{ \text{single}, \text{married}, \text{divorced} \}$.
 - **Adquisición de cuenta de ahorro**: $\Omega = \{ 0, 1 \}$ (donde $0$ corresponde a "no adquirir la cuenta" y $1$ corresponde a "sí adquirir la cuenta").
-
-La tabla de contingencia entre estas dos variables se muestra a continuación:
 
 ```{r}
 #| echo: false
@@ -837,38 +635,36 @@ Los eventos que consideraremos son los siguientes:
 A partir de la @tbl-esticv-adq obtenemos directamente las siguientes probabilidades:
 
 $$
-P(E_1) = \frac{1396}{2239}, \quad P(E_2) = \frac{1872}{2239}, \quad P(E_1 \cap E_2) = \frac{1157}{2239}
-.$$
+\mathbb{P}(E_1) = \frac{1396}{2239}, \quad \mathbb{P}(E_2) = \frac{1872}{2239}, \quad \mathbb{P}(E_1 \cap E_2) = \frac{1157}{2239}.
+$$
 
 Con esto, podemos evaluar las diferentes condiciones para determinar la independencia de $E_1$ y $E_2$.
 
-**Condición 1:** $P(A \cap B) = P(A) \cdot P(B)$
+**Condición 1:** $\mathbb{P}(A \cap B) = \mathbb{P}(A) \cdot \mathbb{P}(B)$
 
 $$
-P(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = P(E_1) \cdot P(E_2)
+\mathbb{P}(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = \mathbb{P}(E_1) \cdot \mathbb{P}(E_2)
 $$
 
-**Condición 2:** $P(A | B) = P(A)$
+**Condición 2:** $\mathbb{P}(A | B) = \mathbb{P}(A)$
 
 $$
-P(E_1 | E_2) = \frac{P(E_1 \cap E_2)}{P(E_2)} = \frac{\frac{1157}{2239}}{\frac{1872}{2239}} = \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = P(E_1)
-.$$
+\mathbb{P}(E_1 | E_2) = \frac{\mathbb{P}(E_1 \cap E_2)}{\mathbb{P}(E_2)} = \frac{\frac{1157}{2239}}{\frac{1872}{2239}} = \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = \mathbb{P}(E_1).
+$$
 
-**Condición 3:** $P(B | A) = P(B)$
+**Condición 3:** $\mathbb{P}(B | A) = \mathbb{P}(B)$
 
 $$
-P(E_2 | E_1) = \frac{P(E_2 \cap E_1)}{P(E_1)} = \frac{\frac{1157}{2239}}{\frac{1396}{2239}} = \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = P(E_2)
-.$$
+\mathbb{P}(E_2 | E_1) = \frac{\mathbb{P}(E_2 \cap E_1)}{\mathbb{P}(E_1)} = \frac{\frac{1157}{2239}}{\frac{1396}{2239}} = \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = \mathbb{P}(E_2).
+$$
 
 **Ley de Bayes:**
 
 $$
-P(E_2 | E_1) = \frac{P(E_1 | E_2) \cdot P(E_2)}{P(E_1 | E_2) \cdot P(E_2) + P(E_1 | E_2^c) \cdot P(E_2^c)} = \frac{\frac{1157}{1872} \cdot \frac{1872}{2239}}{\frac{1157}{1872} \cdot \frac{1872}{2239} + \frac{239}{367} \cdot \frac{367}{2239}} = \frac{1157}{1396}
+\mathbb{P}(E_2 | E_1) = \frac{\mathbb{P}(E_1 | E_2) \cdot \mathbb{P}(E_2)}{\mathbb{P}(E_1 | E_2) \cdot \mathbb{P}(E_2) + \mathbb{P}(E_1 | E_2^c) \cdot \mathbb{P}(E_2^c)} = \frac{\frac{1157}{1872} \cdot \frac{1872}{2239}}{\frac{1157}{1872} \cdot \frac{1872}{2239} + \frac{239}{367} \cdot \frac{367}{2239}} = \frac{1157}{1396}
 $$
 
-Se puede concluir de estas condiciones que $E_1$ y $E_2$, hablando estrictamente, son **dependientes** ya que $P(A \cap B) \neq P(E_1) \cdot P(E_2)$ y $P(E_1 | E_2) \neq P(E_1)$. Sin embargo, cabe destacar que, aunque diferentes estas probabilidades, son extremadamente similares (e incluso iguales si se las redondea a los dos decimales).
-
-Esto se puede interpretar como que la observación del estado civil de un encuestado y la observación de si adquirió la cuenta de ahorro, aunque sean eventos dependientes, se acercan mucho a ser independientes. Esto tiene sentido en relación a la @fig-estciv-adq, donde se observa que las proporciones de estado civil entre los clientes que adquirieron la cuenta y los que no son parecidas.
+Se puede concluir de estas condiciones que $E_1$ y $E_2$, hablando estrictamente, son **dependientes** ya que $\mathbb{P}(A \cap B) \neq \mathbb{P}(E_1) \cdot \mathbb{P}(E_2)$ y $\mathbb{P}(E_1 | E_2) \neq \mathbb{P}(E_1)$. Sin embargo, cabe destacar que, aunque diferentes estas probabilidades, son extremadamente similares. Esto se puede interpretar como que $E_1$ y $E_2$, aunque sean eventos dependientes, se acercan mucho a ser independientes. Esto tiene sentido en relación a la @fig-estciv-adq, donde se visualizan las proporciones similares de estos eventos.
 
 ## Variables aleatorias
 
@@ -876,31 +672,31 @@ Esto se puede interpretar como que la observación del estado civil de un encues
 
 Un caso de ejemplo para esta variable es el siguiente:
 
-> Se propone un siguiente estudio donde se reutilizan los datos de los clientes de este estudio. En particular, se seleccionan en dicho estudio a las personas que hayan sido contactadas durante la presente campaña no más de 2 veces. En esta situación, ¿cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que cumplan con esta característica?
+> Se busca seleccionar del presente estudio a las personas que hayan sido contactadas no más de 2 veces, ¿cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que cumplan con esta característica?
 
 En este contexto, definimos la siguiente variable aleatoria discreta:
 
-> $X_1$: Número de personas del conjunto de `r nrow(df)` que han sido contactadas a lo mucho 2 veces durante la presente campaña.
+> $X_1$: Número de personas del conjunto de `r nrow(df)` que han sido contactadas a lo mucho 2 veces durante la campaña.
 
-Debido a la manera en la que está definida, esta variable sigue el modelo binomial
+Por su definición, esta variable sigue el modelo binomial
 
 $$
-X_1 \sim B(n, p)
-,$$
+X_1 \sim \operatorname{B}(n, p),
+$$
 
 donde:
 
 - $n = `r nrow(df)`$ es la cantidad de personas en el estudio.
-- $p = P(\text{campana} \leq 2)$ es la probabilidad de que una persona del estudio escogida al azar hay sido contactada no más de 2 veces durante la presente campaña.
+- $p = \mathbb{P}(\text{campana} \leq 2)$ es la probabilidad empírica de que una persona del estudio escogida al azar hay sido contactada no más de 2 veces durante la presente campaña.
 
 #### Gráficos y propiedades
 
 A partir de la definición de $X_1$, se deducen las siguientes probabilidades:
 
-- $P(X_1 = 0)$: Probabilidad de que ningún cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
-- $P(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del conjunto de `r nrow(df)` del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
+- $\mathbb{P}(X_1 = 0)$: Probabilidad de que ningún cliente del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
+- $\mathbb{P}(X_1 = 1)$: Probabilidad de que exactamente 1 cliente del estudio haya sido contactado a lo mucho 2 veces en la presente campaña.
 - ...
-- $P(X_1 = `r nrow(df)`)$: Probabilidad de que todos los clientes del conjunto de `r nrow(df)` del estudio hayan sido contactados a lo mucho 2 veces en la presente campaña.
+- $\mathbb{P}(X_1 = `r nrow(df)`)$: Probabilidad de que todos los clientes del estudio hayan sido contactados a lo mucho 2 veces en la presente campaña.
 
 La gráfica de la distribución es la siguiente:
 
@@ -924,7 +720,7 @@ plot(
 )
 ```
 
-No obstante, la forma de la distribución se puede apreciar mejor si se grafica la parte central:
+Además, la parte central de la distribución es la siguiente:
 
 ```{r}
 #| echo: false
@@ -960,7 +756,7 @@ Algunas propiedades de esta distribución teórica son:
 
 La pregunta
 
-> ¿Cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que hayan sido contactadas a lo mucho 2 veces durante la presente campaña?
+> ¿Cuál es la probabilidad de seleccionar exactamente 1500 personas del total ($n = `r nrow(df)`$) que hayan sido contactadas a lo mucho 2 veces durante la campaña?
 
 se puede responder mediante la probabilidad
 
@@ -970,12 +766,10 @@ ans <- dbinom(1500, n, p)
 ```
 
 $$
-P(X_1 = 1500) = `r r(ans)`
-.$$
+\mathbb{P}(X_1 = 1500) = `r r(ans)`.
+$$
 
-En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de seleccionar exactamente 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña.
-
-Esta probabilidad es un valor muy bajo, y esto tiene sentido. Aunque 1500 está relativamente cerca al valor esperado de $X_1$ ($`r r(d_mean)`$), es necesario tomar en cuenta que el tamaño de la muestra ($`r n`$) es amplio, por lo que la probabilidad de que el número de clientes seleccionados con una propiedad deseada sea una cantidad exacta siempre será baja, sin importar dicha cantidad deseada.
+La probabilidad de seleccionar exactamente 1500 clientes contactados ≤2 veces es del `r 100 * r(ans)`%, un valor muy bajo, esto tiene sentido, porque el tamaño de la muestra ($`r n`$) es grande en comparación a $1$, así que cualquier valor particular tendrá una probabilidad baja de ocurrir.
 
 En este sentido, una pregunta más interesante podría ser
 
@@ -989,10 +783,10 @@ ans <- pbinom(1500, n, p) - pbinom(1299, n, p)
 ```
 
 $$
-P(1300 \leq X_1 \leq 1500) = P(X_1 \leq 1500) - P(X_1 \leq 1299) = `r r(ans)`
-.$$
+\mathbb{P}(1300 \leq X_1 \leq 1500) = \mathbb{P}(X_1 \leq 1500) - \mathbb{P}(X_1 \leq 1299) = `r r(ans)`.
+$$
 
-En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de seleccionar entre 1300 y 1500 clientes que hayan sido contactados no más de 2 veces durante la presente campaña. Tiene sentido que esta probabilidad sea tan alta, puesto que el rango entre $1300$ y $1500$ contiene a la media.
+La probabilidad de seleccionar entre 1300 y 1500 clientes contactados ≤2 veces es `r 100 * r(ans)`%. Tiene sentido que esta probabilidad sea tan alta, puesto que el rango entre $1300$ y $1500$ contiene a la media.
 
 ### Variable discreta 2
 
@@ -1002,7 +796,7 @@ df_adq <- df %>% filter(adq_ahorro == 1)
 
 Supongamos ahora el siguiente caso de ejemplo:
 
-> Luego del estudio actual, se busca realizar un estudio subsiguiente. Sin embargo, se quiere analizar a un subconjunto de solamente $1000$ personas del estudio actual, y este subconjunto se tomará de quienes hayan adquirido la cuenta de ahorro. ¿Cuál es la probabilidad de que, de esta muestra aleatoria, al menos $45$ tengan edad mayor o igual a $60$ años?
+> Tras este estudio, se plantea uno subsiguiente con un subconjunto de $1000$ personas, seleccionadas entre quienes adquirieron la cuenta de ahorro. ¿Cuál es la probabilidad de que al menos $45$ de ellas tengan $60$ o más?
 
 En este contexto, definimos la siguiente variable aleatoria discreta:
 
@@ -1011,8 +805,8 @@ En este contexto, definimos la siguiente variable aleatoria discreta:
 Debido a cómo está definida, esta variable sigue el modelo hipergeométrico
 
 $$
-X_2 \sim H(N, n, k)
-,$$
+X_2 \sim H(N, n, k),
+$$
 
 donde:
 
@@ -1031,10 +825,10 @@ k <- sum(df_adq$edad >= 60)
 
 A partir de la definición de $X_2$, se deducen las siguientes probabilidades:
 
-- $P(X_2 = 0)$: Probabilidad de que ningún cliente del subconjunto de $`r n`$ tenga al menos 60 años.
-- $P(X_2 = 1)$: Probabilidad de que exactamente 1 cliente del subconjunto de $`r n`$ tenga al menos 60 años.
+- $\mathbb{P}(X_2 = 0)$: Probabilidad de que ningún cliente del subconjunto de $`r n`$ tenga al menos 60 años.
+- $\mathbb{P}(X_2 = 1)$: Probabilidad de que exactamente 1 cliente del subconjunto de $`r n`$ tenga al menos 60 años.
 - ...
-- $P(X_2 = `r n`)$: Probabilidad de que todos los clientes del subconjunto de $`r n`$ tengan al menos 60 años.
+- $\mathbb{P}(X_2 = `r n`)$: Probabilidad de que todos los clientes del subconjunto de $`r n`$ tengan al menos 60 años.
 
 La gráfica de la distribución es la siguiente:
 
@@ -1101,14 +895,14 @@ ans <- phyper(44, k, N - k, n, lower.tail = FALSE)
 ```
 
 $$
-P(X_2 \geq 45) = `r r(ans)`
-.$$
+\mathbb{P}(X_2 \geq 45) = `r r(ans)`.
+$$
 
 En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df)`$, al menos $45$ personas tengan $60$ años o más.
 
 Una pregunta que usa la función de probabilidad en lugar de la acumulada es la siguiente:
 
-> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas de quienes adquirieron la cuenta de ahorro en el estudio actual, exactamente $45$ tengan edad mayor o igual a $60$ años?
+> ¿Cuál es la probabilidad de que, de una muestra aleatoria de $1000$ personas de quienes adquirieron la cuenta de ahorro en el estudio actual, exactamente $45$ tengan $60$ añoso más?
 
 Esta pregunta se puede responder mediante la probabilidad
 
@@ -1118,10 +912,10 @@ ans <- dhyper(45, k, N - k, n)
 ```
 
 $$
-P(X_2 = 45) = `r r(ans)`
-.$$
+\mathbb{P}(X_2 = 45) = `r r(ans)`.
+$$
 
-En otras palabras, existe un `r 100 * r(ans)`% de probabilidad de que, de un subconjunto aleatorio de $1000$ de entre el total de $`r nrow(df_adq)`$ que adquirieron la cuenta, exactamente $45$ personas tengan 60 años o más.
+La probabilidad de que, en una muestra aleatoria de $1000$ entre $`r nrow(df_adq)`$ clientes,  exactamente 45 tengan ≥60 años es `r 100 * r(ans)`%.
 
 ### Variable discreta 3
 
@@ -1133,7 +927,7 @@ p <- sum(df_no_cntc$adq_ahorro == 0) / nrow(df_no_cntc)
 
 Supongamos la siguiente situación:
 
-> Un estudio subsiguiente quiere saber si no realizar contactos telefónicos con las personas es viable, ya que podría ahorrar recursos humanos. En este sentido, ¿cuál es la probabilidad de que tome exactamente 10 selecciones de clientes al azar de entre quienes no hayan sido contactados para hallar uno que no adquiera la cuenta de ahorro?
+> Un estudio posterior evalúa la viabilidad de no realizar contactos telefónicos. ¿Cuál es la probabilidad de que se necesiten exactamente 10 selecciones aleatorias de clientes no contactados para encontrar uno que no adquirió la cuenta de ahorro?
 
 En este contexto, definimos la siguiente variable aleatoria discreta:
 
@@ -1142,18 +936,17 @@ En este contexto, definimos la siguiente variable aleatoria discreta:
 Esta variable, por su definición, sigue el modelo probabilístico
 
 $$
-X_3 \sim \operatorname{Geom}(p)
-,$$
+X_3 \sim \operatorname{Geom}(p),
+$$
 
-donde $p = `r r(p)`$, la probabilidad de éxito, es igual a la probabilidad empírica de seleccionar al azar un cliente no contactado previamente (es decir, con `pdias == -1`) que no haya adquirido la cuenta de ahorro.
+donde $p = `r r(p)`$, la probabilidad de éxito, es igual a la probabilidad empírica de seleccionar al azar un cliente no contactado previamente (`pdias == -1`) que no haya adquirido la cuenta de ahorro.
 
 #### Gráficos y propiedades
 
 A partir de la definición de $X_3$, se deducen las siguientes probabilidades:
 
-- $P(X_3 = 0)$: Probabilidad de hacer 0 selecciones de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
-- $P(X_3 = 1)$: Probabilidad de hacer una selección de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
-- $P(X_3 = 2)$: Probabilidad de hacer dos selecciones de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
+- $\mathbb{P}(X_3 = 0)$: Probabilidad de hacer 0 selecciones de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
+- $\mathbb{P}(X_3 = 1)$: Probabilidad de hacer 1 selección de entre los clientes no contactados hasta seleccionar un cliente que no adquirido la cuenta de ahorro.
 - ...
 
 La gráfica de la distribución es la siguiente:
@@ -1223,14 +1016,14 @@ ans <- dgeom(10, p)
 ```
 
 $$
-P(X_3 = 10) = `r r(ans)`
-.$$
+\mathbb{P}(X_3 = 10) = `r r(ans)`.
+$$
 
-Esto es, existe un `r 100 * r(ans)`% de probabilidad de que tome exactamente 10 selecciones de clientes al azar (nuevamente, de entre quienes no hayan sido contactados) para finalmente hallar uno que no adquiera la cuenta de ahorro.
+La probabilidad de necesitar exactamente 10 selecciones entre clientes no contactados para encontrar uno que no adquirió la cuenta es `r 100 * r(ans)`%.
 
-Otra pregunta, quizá más informativa, que se puede plantear es la siguiente:
+Otra pregunta que se puede plantear es la siguiente:
 
-> ¿Cuál es la probabilidad de que tome más de 10 selecciones de clientes al azar de entre quienes no hayan sido contactados para hallar uno que no adquiera la cuenta de ahorro?
+> ¿Cuál es la probabilidad de necesitar más de 10 selecciones para encontrar uno que no adquirió la cuenta?
 
 La respuesta a esta pregunta es
 
@@ -1240,10 +1033,10 @@ ans <- pgeom(10, p, lower.tail = FALSE)
 ```
 
 $$
-P(X_3 > 10) = `r r(ans)`
-.$$
+\mathbb{P}(X_3 > 10) = `r r(ans)`.
+$$
 
-Esto quiere decir que existe solo un `r 100 * r(ans)`% de probabilidad de que tome más de 10 selecciones de entre los clientes no contactados en encontrar a alguien que no adquiera la cuenta de ahorro. Aunque, en general, la probabilidad de que un cliente no contactado adquiera la cuenta es relativamente alta, esto indica que más de 10 clientes no contactados seguidos que sí adquieran la cuenta no es tan probable.
+Esto quiere decir que La probabilidad de necesitar más de 10 selecciones entre clientes no contactados para encontrar uno que no adquirió la cuenta es `r 100 * r(ans)`%
 
 ### Variable continua
 
@@ -1251,13 +1044,13 @@ La variable continua que analizaremos será la siguiente:
 
 > $X_4$: Balance de una persona seleccionada al azar de las $`r nrow(df_adq)`$ que adquirieron la cuenta de ahorro en el estudio.
 
-De esta manera, definimos las siguiente probabilidad:
+Aunque $X_4$ no sigue alguna distribución de probabilidad conocida, muestra una tendencia exponencial, como muestra la @fig-distribution-x4.
 
-- $P(X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro sea menor o igual a $b$.
-- $P(X_4 \geq a)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro sea mayor o igual a $a$.
-- $P(a \leq X_4 \leq b)$: Probabilidad de que el balance de una persona seleccionada al azar de entre aquellas que adquirieron la cuenta de ahorro se encuentre entre $a$ y $b$ euros.
+Cabe destacar que las curvas exponenciales que generaremos para aproximar esta distribución utilizan una tasa $\beta$ igual a la media empírica del conjunto, ya que en una distribución exponencial se cumple la propiedad $\mu = \beta$.
 
-En general, $X_4$ no sigue alguna distribución de probabilidad conocida:
+```{r}
+beta <- mean(df_adq$balance)
+```
 
 ```{r}
 #| echo: false
@@ -1275,14 +1068,17 @@ hist(
   ylab = "P(X4 = x)",
   col = "hotpink"
 )
-lines(x, dexp(x, 1 / mean(df_adq$balance)), col = "red", lwd = 2)
+lines(x, dexp(x, 1 / beta), col = "red", lwd = 2)
 ```
 
-Aunque la @fig-distribution-x4 muestra una apariencia posiblemente exponencial, se puede comprobar numéricamente que la condición $\operatorname{E}(X_4) = \operatorname{SD}(X_4)$, de una distribución exponencial, *no se cumple* por un gran margen:
+Aunque la @fig-distribution-x4 muestra una apariencia posiblemente exponencial, se puede comprobar numéricamente que la SD teórica de este modelo exponencial no coincide con la SD empírica por un gran margen de más del $100\%$:
 
 ```{r}
-mean(df_adq$balance)
-sd(df_adq$balance)
+sd_teorica <- beta 
+sd_empirica <- sd(df_adq$balance)
+
+sd_teorica
+sd_empirica
 ```
 
 ```{r}
@@ -1290,15 +1086,21 @@ sd(df_adq$balance)
 max_bal <- 6000
 ```
 
-Sin embargo, un modelo exponencial se ajusta algo mejor si nos enfocamos en los datos por debajo de cierto valor. Se muestra a continuación la distribución de probabilidad únicamente para los balances por debajo de **`r max_bal` euros** y una curva de distribución exponencial generada con tasa $\beta$ igual a la media de estos balances filtrados:
+Sin embargo, un modelo exponencial se ajusta algo mejor al considerar solo balances menores a **`r max_bal` euros** como se muestra en la @fig-distribution-x4-zoomed. La curva de distribución exponencial se genera con tasa $\beta$ igual a la media de estos balances filtrados.
+
+En este caso, la tasa usada para la curva exponencial es la media de los balances menores a `r max_bal`.
+
+```{r}
+df_adq_filt <- df_adq %>% filter(balance < max_bal)
+beta <- mean(df_adq_filt$balance)
+```
 
 ```{r}
 #| echo: false
 #| fig-cap: Distribución de probabilidad de $X_4$ (balances < 6000)
 #| label: fig-distribution-x4-zoomed
 
-df_adq_filt <- df_adq %>% filter(balance < max_bal)
-lambda <- 1 / mean(df_adq_filt$balance)
+lambda <- 1 / beta
 
 x <- seq(min(df_adq_filt$balance), max(df_adq_filt$balance), length = 100)
 
@@ -1314,18 +1116,19 @@ hist(
 lines(x, dexp(x, lambda), col = "red", lwd = 2)
 ```
 
-Cabe destacar que este cambio, de todas formas, preserva el `r r(100 * length(df_adq_filt$balance) / length(df_adq_filt$balance))`% de los balances originales.
-
-Considerando a estos balances, su media y desviación estándar son, respectivamente, los siguientes:
+Considerando a estos balances, las desviaciones estándar teórica y empírica son las siguientes:
 
 ```{r}
-mean(df_adq_filt$balance)
-sd(df_adq_filt$balance)
+sd_teorica <- beta # Acorde con la propiedad de la distribución exponencial
+sd_empirica <- sd(df_adq_filt$balance)
+
+sd_teorica
+sd_empirica
 ```
 
-Siguen sin ser exactamente iguales, pero ahora el error relativo es de `r r(100 * abs(mean(df_adq_filt$balance) - sd(df_adq_filt$balance)) / sd(df_adq_filt$balance))`% y la curva exponencial encaja algo mejor en la gráfica. El ajuste sigue sin estar muy cerca de ser exacto, pero está lo suficientemente cerca como para usarlo en cálculos que no requieran mayor precisión.
+Siguen sin ser iguales, pero ahora el error relativo es de `r r(100 * abs(sd_teorica - sd_empirica) / sd_teorica)`% y la curva exponencial encaja mejor en la gráfica. El ajuste no es exacto, pero es suficiente para cálculos que no requieran mayor precisión.
 
-Solo por completitud, podemos comprobar que la curva de este modelo alternativo también encaja decentemente para los datos completos del balance:
+Podemos comprobar que la curva de este modelo alternativo también encaja decentemente para los datos completos del balance:
 
 ```{r}
 #| echo: false
@@ -1352,26 +1155,26 @@ No obstante, es necesario siempre tener en cuenta que este modelo, en general, e
 Supongamos que $X_4$ sigue la distribución
 
 $$
-X_4 \sim \operatorname{Exp}(\beta)
-,$$
+X_4 \sim \operatorname{Exp}(\beta),
+$$
 
-donde $\beta$, la tasa, es igual a la media empírica de los balances menores a $`r max_bal`$ euros.
+donde $\beta = `r beta`$, la tasa, es igual a la media empírica de los balances menores a $`r max_bal`$ euros.
 
 Ahora, supongamos que queremos saber lo siguiente:
 
-> ¿Cuál es la probabilidad de que una persona seleccionada al azar de entre las que adquirieron la cuenta de ahorro tenga un balance mayor o igual a $2000$ euros?
+> ¿Cuál es la probabilidad de que una persona seleccionada al azar que adquirió la cuenta tenga un balance de al menos $2000$ euros?
 
-Esta consulta se puede calcular por medio de la probabilidad
+Se puede calcular por medio de la probabilidad
 
 $$
-P(X_4 \ge 2000) = `r r(pexp(2000, lambda, lower.tail = FALSE))`
-.$$
+\mathbb{P}(X_4 \ge 2000) = `r r(pexp(2000, lambda, lower.tail = FALSE))`.
+$$
 
-En otras palabras, una persona seleccionada al azar del estudio tiene solo un $4\%$ de probabilidad de tener un balance de al menos 2000 euros. Esto es un indicador de que la gran mayoría de clientes de la muestra no tienen balances más allá de los 2000 euros. A su vez, esto puede indicar que la muestra de clientes con balance mayor o igual a 2000 euros no es muy representativa, por lo que posibles inferencias sobre este grupo podrían estar sesgadas por falta de información.
+Esto es: una persona seleccionada al azar del estudio tiene solo un $4\%$ de probabilidad de tener un balance de al menos 2000 euros. Esto es un indicador de que la gran mayoría de clientes de la muestra no tienen balances más allá de los 2000 euros.
 
 Otra posible consulta podría ser la siguiente:
 
-> ¿Cuál es la probabilidad de que una persona seleccionada al azar de entre las que adquirieron la cuenta de ahorro tenga un balance entre $500$ y $1000$ euros?
+> ¿Cuál es la probabilidad de que una persona seleccionada al azar que adquirió la cuenta tenga un balance entre $500$ y $1000$ euros?
 
 Esta pregunta corresponde a la probabilidad
 
@@ -1381,17 +1184,17 @@ ans <- pexp(1000, lambda) - pexp(500, lambda)
 ```
 
 $$
-P(500 \leq X_4 \leq 1000) = P(X_4 \leq 1000) - P(X_4 < 500) = `r r(ans)`
-.$$
+\mathbb{P}(500 \leq X_4 \leq 1000) = \mathbb{P}(X_4 \leq 1000) - \mathbb{P}(X_4 < 500) = `r r(ans)`.
+$$
 
-Es decir, existe un $`r 100 * r(ans)`\%$ de probabilidad de que una persona seleccionada al azar de entre quienes adquirieron la cuenta de ahorro tenga un balance entre $1000$ y $500$ euros. Considerando el rango de los balances, es una probabilidad relativamente elevada. Esto puede ser un indicador de que, al menos entre quienes adquirieron la cuenta, es relativamente frecuente tener un balance en este rango.
+Existe un $`r 100 * r(ans)`\%$ de probabilidad de que una persona seleccionada al azar de entre quienes adquirieron la cuenta de ahorro tenga un balance entre $1000$ y $500$ euros, lo que es relativamente alto dado el rango..
 
 ## Conclusiones
 
-Considerando los análisis realizados en este informe, formulamos las siguientes conclusiones en base a cada uno de nuestros objetivos:
+Considerando los análisis realizados en este informe, formulamos las siguientes conclusiones en base a nuestros objetivos:
 
-1. Los balances de quienes adquirieron la cuenta de ahorro son, en general, superiores a los de quienes no la adquirieron, y una proporción considerable se encuentra entre 500 y 1000 euros. Además, se observa una proporción ligeramente mayor de personas con historial de mora que aceptan la cuenta de ahorro en comparación con aquellas sin mora.
-2. La mayoría de los encuestados con edades atípicas (mayores de 70 años) adquirieron la cuenta de ahorro. Además, existe una probabilidad de 0.34 de que entre los clientes que aceptan la cuenta el 4.5% tengan al menos 60 años. No obstante, en general, las distribuciones de edad entre ambos grupos presentan medias y medianas similares. Asimismo, entre quienes adquirieron la cuenta se observa una proporción ligeramente menor de individuos casados.
-3. En términos generales, las personas con nivel educativo de secundaria son ligeramente más propensas a adquirir una cuenta de ahorro. Por otro lado, el nivel educativo de primaria presenta la menor tasa de adquisición de cuentas de ahorro.
-4. El número promedio de contactos no varía significativamente entre quienes adquieren la cuenta y quienes no. Sin embargo, en algunos casos, un mayor número de contactos parece estar asociado con una mayor probabilidad de adquisición. Además, la mayoría de los encuestados tomaron la decisión de aceptar o rechazar la cuenta en el primer contacto, lo que sugiere la importancia de la primera impresión del banco en la decisión del cliente. Por otro lado, la probabilidad de que un cliente no contactado adquiera la cuenta es relativamente alta; sin embargo, la ocurrencia consecutiva de más de 10 clientes no contactados que sí la adquieran es poco probable.
-5. Las personas que adquieren la cuenta de ahorro tienden a hacerlo en un período ligeramente menor tras el último contacto en comparación con quienes no la adquieren. Hay una cantidad considerable de clientes que adquirieron una cuenta sin haber sido contactados, por lo que sería apropiado investigar sobre las posibles formas en las que estos clientes pudieron haberse enterado de la cuenta de ahorro sin un contacto directo del banco.
+1. Los balances de quienes adquirieron la cuenta suelen ser superiores, con un rango predominante de 500 a 1000 euros. Además, hay una ligera mayor proporción de personas con historial de mora entre quienes la aceptan.
+2. La mayoría de los mayores de 70 años adquirieron la cuenta. En general, las distribuciones de edad son similares, aunque hay menos casados entre quienes la aceptan
+3. Las personas con secundaria son más propensas a adquirir la cuenta, mientras que aquellas con primaria presentan la menor tasa de adquisición.
+4. El número de contactos no varía mucho entre quienes adquieren la cuenta y quienes no. La mayoría decide en el primer contacto, destacando su importancia. Aunque muchos no contactados aceptan la cuenta, la probabilidad de que más de 10 seguidos lo hagan es baja.
+5. Quienes adquieren la cuenta suelen hacerlo en menos tiempo tras el último contacto. Además, muchos la obtuvieron sin ser contactados previamente, lo que reafirma la importancia de la primera impresión.
