@@ -97,7 +97,7 @@ Conocer los factores que influyen en la aceptación de una cuenta de ahorro vía
 | **Mora**                            | cualitativa nominal, dicotómica | Uno de `"si"`, `"no"`.                              |
 | **Balance**                         |      cuantitativa continua      | Mayor o igual a $0$.                                |
 | **Campaña**                         |      cuantitativa discreta      | Mayor o igual a $0$.                                |
-| **PDias**                           |      cuantitativa discreta      | Mayor o igual a $0$ o igual a $-1$.                 |
+| **PDias**                           |      cuantitativa discreta      | Mayor a $0$ o igual a $-1$.                         |
 | **Adquisición de cuenta de ahorro** | cualitativa nominal, dicotómica | Igual a $0$ o a $1$.                                |
 
 ## Descriptores
@@ -210,7 +210,7 @@ $$
 Comprobación:
 
 $$
-\mathbb{P}(\text{primaria}) + P(\text{secundaria}) + P(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1.
+\mathbb{P}(\text{primaria}) + \mathbb{P}(\text{secundaria}) + \mathbb{P}(\text{terciario}) = \frac{331}{2239} + \frac{1247}{2239} + \frac{661}{2239} = \frac{2239}{2239} = 1.
 $$
 
 ## Probabilidades empíricas: Variable 2
@@ -238,7 +238,7 @@ $$
 Comprobación:
 
 $$
-\mathbb{P}(\text{1 contacto}) + \ldots + P(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1
+\mathbb{P}(\text{1 contacto}) + \ldots + \mathbb{P}(\text{Más de 10 contactos}) = \frac{869}{2239} + \ldots + \frac{67}{2239} = \frac{2239}{2239} = 1
 .$$
 
 ## Probabilidad condicional
@@ -252,15 +252,15 @@ kable(tab)
 ```
 
 $$
-\mathbb{P}(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = P(E_1) \cdot P(E_2)
+\mathbb{P}(E_1 \cap E_2) = \frac{1157}{2239} \approx 0.517 \neq 0.521 \approx \frac{1396}{2239} \cdot \frac{1872}{2239} = \mathbb{P}(E_1) \cdot \mathbb{P}(E_2)
 $$
 
 $$
-\mathbb{P}(E_1 | E_2) =  \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = P(E_1).
+\mathbb{P}(E_1 | E_2) =  \frac{1157}{1872} \approx 0.618 \neq 0.623 \approx \frac{1396}{2239} = \mathbb{P}(E_1).
 $$
 
 $$
-\mathbb{P}(E_2 | E_1) =  \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = P(E_2).
+\mathbb{P}(E_2 | E_1) =  \frac{1157}{1396} \approx 0.829 \neq 0.846 \approx \frac{1872}{2239} = \mathbb{P}(E_2).
 $$
 
 Los eventos son **dependientes**, pero no por mucho margen.
